@@ -34,7 +34,8 @@
 * **Fase B:** Preparar el modelo de datos para ingestar la tabla de vecinos LLDP.
 * **Entregable:** Vista de árbol o grafo visual mostrando jerarquías.
 
-### [ ] MVP 5: Integración en Tiempo Real con Oxidized
+### [x] MVP 5: Integración en Tiempo Real con Oxidized (Completado)
+
 * **Objetivo:** Cero intervención humana en la actualización del inventario.
 * **Desarrollo:** Creación de un Webhook o Cronjob en FastAPI.
 * **Flujo esperado:** Oxidized detecta cambio -> Genera Backup -> Llama al Webhook de FastAPI -> FastAPI ejecuta el `parser.main` -> Actualiza los JSON -> Refresca la vista en el portal.
