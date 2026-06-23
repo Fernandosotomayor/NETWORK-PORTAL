@@ -1,0 +1,80 @@
+:root {
+  --portal-ink: #17202a;
+  --portal-muted: #667085;
+  --portal-line: #d8dee8;
+  --portal-band: #f6f8fb;
+  --portal-accent: #0f766e;
+}
+
+body {
+  background: var(--portal-band);
+  color: var(--portal-ink);
+}
+
+.navbar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.page-shell {
+  max-width: 1320px;
+}
+
+.metric-card {
+  background: #fff;
+  border: 1px solid var(--portal-line);
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 112px;
+}
+
+.metric-label {
+  color: var(--portal-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.content-panel {
+  background: #fff;
+  border: 1px solid var(--portal-line);
+  border-radius: 8px;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  color: #344054;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.port-description {
+  min-width: 220px;
+}
+
+.vlan-list {
+  max-width: 420px;
+  overflow-wrap: anywhere;
+}
+
+.badge-mode {
+  min-width: 72px;
+}
+
+.empty-state {
+  color: var(--portal-muted);
+  padding: 2rem;
+  text-align: center;
+}

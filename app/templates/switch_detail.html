@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{{ switch.hostname }} | STLi Network Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">{{ switch.hostname }}</h1>
+    <p class="text-secondary mb-0">{{ switch.ip }} · {{ switch.model or 'Modelo no informado' }}</p>
+  </div>
+  <a class="btn btn-outline-dark align-self-lg-start" href="{{ url_for('inventory') }}">Volver</a>
+</div>
+
+<section class="content-panel mb-4">
+  <div class="p-3 border-bottom">
+    <h2 class="h5 mb-0">Información general</h2>
+  </div>
+  <div class="row g-0">
+    <div class="col-12 col-md-6 col-xl-3 p-3 border-end">
+      <div class="text-secondary small">IP</div>
+      <div class="fw-semibold">{{ switch.ip }}</div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3 p-3 border-end">
+      <div class="text-secondary small">Modelo</div>
+      <div class="fw-semibold">{{ switch.model or '-' }}</div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3 p-3 border-end">
+      <div class="text-secondary small">Firmware</div>
+      <div class="fw-semibold">{{ switch.firmware or '-' }}</div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3 p-3">
+      <div class="text-secondary small">Ubicación</div>
+      <div class="fw-semibold">{{ switch.location or '-' }}</div>
+    </div>
+  </div>
+  {% if switch.warnings %}
+  <div class="p-3 border-top">
+    <div class="alert alert-warning mb-0">
+      <strong>{{ switch.warnings | length }} advertencias:</strong>
+      {{ switch.warnings[:3] | join(' · ') }}{% if switch.warnings | length > 3 %} · ...{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<section class="content-panel mb-4">
+  <div class="p-3 border-bottom d-flex justify-content-between">
+    <h2 class="h5 mb-0">Puertos</h2>
+    <span class="badge text-bg-secondary">{{ switch.ports | length }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Puerto</th>
+          <th>Modo</th>
+          <th>Access VLAN</th>
+          <th>Nativa</th>
+          <th>Permitidas</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for port in switch.ports %}
+        <tr>
+          <td class="fw-semibold">{{ port.name }}</td>
+          <td><span class="badge badge-mode text-bg-{% if port.mode == 'trunk' %}primary{% elif port.mode == 'access' %}success{% elif port.mode == 'hybrid' %}warning{% else %}secondary{% endif %}">{{ port.mode }}</span></td>
+          <td>{{ port.access_vlan or '-' }}</td>
+          <td>{{ port.native_vlan or '-' }}</td>
+          <td class="vlan-list">{{ port.allowed_vlans | default([]) | vlans }}</td>
+          <td class="port-description">{{ port.description or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-panel">
+  <div class="p-3 border-bottom d-flex justify-content-between">
+    <h2 class="h5 mb-0">VLANs</h2>
+    <span class="badge text-bg-secondary">{{ switch.vlans | length }}</span>
+  </div>
+  <div class="p-3">
+    {% for vlan in switch.vlans %}
+      <a class="badge rounded-pill text-bg-light border text-decoration-none me-1 mb-2" href="{{ url_for('search') }}?q={{ vlan }}">{{ vlan }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="content-panel mt-4">
+  <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+    <h2 class="h5 mb-0">Historial de Revisiones (Git)</h2>
+    <span class="badge bg-dark">{{ history | length }} cambios</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Autor</th>
+          <th>Mensaje de Confirmación</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if not history %}
+        <tr>
+          <td colspan="4" class="text-center py-4 text-secondary fs-7">
+            No se encontró historial de cambios en Git para este switch.
+          </td>
+        </tr>
+        {% else %}
+          {% for change in history %}
+          <tr>
+            <td class="text-secondary font-monospace fs-7">{{ change.date | truncate(19, True, '') }}</td>
+            <td>{{ change.author }}</td>
+            <td><code class="text-dark">{{ change.message }}</code></td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-dark font-monospace" href="{{ url_for('switch_diff', commit_hash=change.commit_hash) }}?filename={{ change.filename }}">
+                ver diff
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

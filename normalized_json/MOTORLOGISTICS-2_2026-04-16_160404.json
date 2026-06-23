@@ -1,0 +1,297 @@
+{
+  "hostname": "Motorlogistics_2",
+  "ip": "10.10.10.212",
+  "model": "GS-4210-24P2S",
+  "firmware": "v4.441b250728",
+  "location": "ML-BODEGA",
+  "vlans": [
+    1,
+    4,
+    5,
+    12,
+    13,
+    14,
+    15,
+    45,
+    51,
+    52,
+    53,
+    54,
+    100,
+    101
+  ],
+  "ports": [
+    {
+      "name": "LAG8",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE1",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE2",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE3",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE4",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE5",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE6",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE7",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE8",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE9",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        13,
+        52,
+        53,
+        54,
+        101
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE10",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE11",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 4,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE12",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 4,
+      "allowed_vlans": [
+        4
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE13",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 4,
+      "allowed_vlans": [
+        4
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE14",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 4,
+      "allowed_vlans": [
+        4
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE15",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 4,
+      "allowed_vlans": [
+        4
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE16",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 101,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE17",
+      "mode": "access",
+      "access_vlan": 15,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE18",
+      "mode": "access",
+      "access_vlan": 15,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE19",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 101,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE20",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 101,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE21",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 101,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE22",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 101,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE23",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE24",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        4,
+        5,
+        12,
+        13,
+        14,
+        15,
+        45,
+        51,
+        52,
+        53,
+        54,
+        100,
+        101
+      ],
+      "description": "",
+      "lldp": null
+    }
+  ],
+  "metadata": {
+    "source_path": "backups\\MOTORLOGISTICS-2_2026-04-16_160404.cfg",
+    "parser_family": "planet_system_config",
+    "line_count": 357,
+    "warnings": [],
+    "errors": []
+  },
+  "management_vlan": 100,
+  "lldp_enabled": true,
+  "snmp": {
+    "enabled": true,
+    "communities": [
+      {
+        "name": "public",
+        "access": "ro"
+      }
+    ],
+    "location": ""
+  }
+}

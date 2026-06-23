@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block title %}Topología NOC | STLi Network Portal{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h1 class="h3 mb-1">Topología de Red NOC</h1>
+  <p class="text-secondary mb-0">Gestión interactiva, enrutamiento ortogonal y persistencia de posiciones sobre plano.</p>
+</div>
+
+<!-- Toolbar -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 bg-light p-2 rounded border gap-2">
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-dark" id="btn-save">💾 Guardar Mapa</button>
+    <button class="btn btn-sm btn-outline-dark" id="btn-bg">🖼️ Plano de Fondo</button>
+    <button class="btn btn-sm btn-outline-danger d-none" id="btn-clear-bg">Quitar Plano</button>
+    <button class="btn btn-sm btn-outline-secondary" id="btn-mode-link">🔌 Enlace Manual: OFF</button>
+  </div>
+  <div class="text-secondary small fw-semibold" id="status-text">
+    Usa Drag & Drop para ubicar los switches en el plano.
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Sidebar of Unplaced switches -->
+  <div class="col-12 col-xl-3">
+    <div class="content-panel h-100 p-3">
+      <h2 class="h6 border-bottom pb-2 mb-2">Equipos sin Ubicar</h2>
+      <div id="unplaced-list" class="d-flex flex-column gap-2" style="max-height: 580px; overflow-y: auto;">
+        <span class="text-muted small">Todos los equipos están ubicados en el plano.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Graph Canvas -->
+  <div class="col-12 col-xl-9">
+    <div id="network-container" style="position: relative; border: 1px solid #d8dee8; border-radius: 8px; overflow: hidden; height: 650px; background-color: #fafbfc;">
+      <!-- Subtle blueprint grid pattern -->
+      <div id="blueprint-grid" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 0;
+           background-size: 40px 40px;
+           background-image: linear-gradient(to right, rgba(203, 213, 225, 0.25) 1px, transparent 1px),
+                             linear-gradient(to bottom, rgba(203, 213, 225, 0.25) 1px, transparent 1px);
+           background-position: center;"></div>
+      
+      <!-- Floorplan background image container -->
+      <div id="floorplan-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.85;"></div>
+      
+      <!-- Cytoscape container -->
+      <div id="network-graph" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Manual Link creation -->
+<div class="modal fade" id="linkModal" tabindex="-1" aria-labelledby="linkModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="linkModalLabel">Nuevo Enlace Manual</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-secondary">Establecer enlace manual entre <strong id="link-src-name">S1</strong> y <strong id="link-tgt-name">S2</strong>.</p>
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label small mb-1" id="lbl-port-src">Puerto en S1</label>
+            <input type="text" class="form-control form-control-sm" id="port-src" placeholder="ej. gi1">
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-1" id="lbl-port-tgt">Puerto en S2</label>
+            <input type="text" class="form-control form-control-sm" id="port-tgt" placeholder="ej. gi2">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-dark" id="btn-confirm-link">Crear Enlace</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Cytoscape.js from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const backendNodes = {{ data.nodes | tojson }};
+    const backendLinks = {{ data.links | tojson }};
+    let topologyState = { positions: {}, background_url: "", manual_links: [] };
+
+    // SVG Switch Icon URL
+    const switchSvg = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="40" viewBox="0 0 100 40">
+        <rect x="2" y="2" width="96" height="36" rx="4" fill="#0f766e" stroke="#0d5c56" stroke-width="2.5"/>
+        <rect x="10" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="20" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="30" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="40" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="50" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="60" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="70" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="80" y="8" width="6" height="6" fill="#cbd5e1" rx="1"/>
+        
+        <rect x="10" y="20" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="20" y="20" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <rect x="30" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
+        <rect x="40" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
+        <rect x="50" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
+        <rect x="60" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
+        <rect x="70" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
+        <rect x="80" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
+        <circle cx="92" cy="17" r="2.5" fill="#22c55e"/>
+      </svg>
+    `);
+
+    // UI elements references
+    const btnSave = document.getElementById("btn-save");
+    const btnBg = document.getElementById("btn-bg");
+    const btnClearBg = document.getElementById("btn-clear-bg");
+    const btnModeLink = document.getElementById("btn-mode-link");
+    const statusText = document.getElementById("status-text");
+    const unplacedList = document.getElementById("unplaced-list");
+    const floorplanContainer = document.getElementById("floorplan-bg");
+
+    let isLinkMode = false;
+    let linkSourceNode = null;
+    let cy = null;
+
+    // Load topology state first
+    fetch("/api/topology/state")
+      .then(res => res.json())
+      .then(state => {
+        topologyState = state;
+        if (topologyState.background_url) {
+          floorplanContainer.style.backgroundImage = `url('${topologyState.background_url}')`;
+          btnClearBg.classList.remove("d-none");
+        }
+        initGraph();
+      })
+      .catch(() => initGraph());
+
+    function initGraph() {
+      const elements = [];
+      const unplaced = [];
+
+      // Process Nodes
+      backendNodes.forEach((node, index) => {
+        const savedPos = topologyState.positions[node.id];
+        if (savedPos) {
+          elements.push({
+            group: 'nodes',
+            data: { id: node.id, label: node.label, ip: node.ip, model: node.model },
+            position: { x: savedPos.x, y: savedPos.y }
+          });
+        } else {
+          // New/Unplaced node: store to place at default layout & list in sidebar
+          unplaced.push(node);
+          // Place vertically on the left side
+          elements.push({
+            group: 'nodes',
+            data: { id: node.id, label: node.label, ip: node.ip, model: node.model, isUnplaced: true },
+            position: { x: 80, y: 80 + (unplaced.length - 1) * 75 }
+          });
+        }
+      });
+
+      // Update sidebar listing of unplaced switches
+      if (unplaced.length > 0) {
+        unplacedList.innerHTML = "";
+        unplaced.forEach(node => {
+          const div = document.createElement("div");
+          div.className = "p-2 border rounded bg-light small d-flex justify-content-between align-items-center";
+          div.innerHTML = `
+            <div>
+              <strong class="text-dark d-block">${node.label}</strong>
+              <span class="text-secondary font-monospace" style="font-size: 0.75rem;">${node.ip}</span>
+            </div>
+            <span class="badge bg-warning text-dark">Pendiente</span>
+          `;
+          unplacedList.appendChild(div);
+        });
+      } else {
+        unplacedList.innerHTML = '<span class="text-muted small">Todos los equipos están ubicados en el plano.</span>';
+      }
+
+      // Process LLDP/Description Links
+      backendLinks.forEach((link, idx) => {
+        elements.push({
+          group: 'edges',
+          data: {
+            id: `edge-auto-${idx}`,
+            source: link.source,
+            target: link.target,
+            label: link.label
+          }
+        });
+      });
+
+      // Process Manual Links from state
+      (topologyState.manual_links || []).forEach((link, idx) => {
+        const s_port = link.source_port;
+        const t_port = link.target_port;
+        const label = (s_port && t_port) ? `${s_port} <-> ${t_port} (M)` : (s_port ? `${s_port} -> ? (M)` : `? <- ${t_port} (M)`);
+        elements.push({
+          group: 'edges',
+          data: {
+            id: `edge-manual-${idx}`,
+            source: link.source,
+            target: link.target,
+            label: label,
+            isManual: true
+          }
+        });
+      });
+
+      // Initialize Cytoscape
+      cy = cytoscape({
+        container: document.getElementById('network-graph'),
+        elements: elements,
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'shape': 'rectangle',
+              'width': '80px',
+              'height': '32px',
+              'background-image': switchSvg,
+              'background-fit': 'contain',
+              'background-color': 'transparent',
+              'label': 'data(label)',
+              'text-valign': 'bottom',
+              'text-margin-y': 6,
+              'font-size': '11px',
+              'font-weight': 'bold',
+              'color': '#1e293b',
+              'font-family': 'system-ui, -apple-system, sans-serif'
+            }
+          },
+          {
+            selector: 'node[isUnplaced]',
+            style: {
+              'border-width': '2px',
+              'border-color': '#f59e0b',
+              'border-style': 'dashed'
+            }
+          },
+          {
+            selector: 'edge',
+            style: {
+              'curve-style': 'taxi', // Manhattan style orthogonal routing
+              'taxi-direction': 'auto',
+              'taxi-turn': '30px',
+              'width': 3,
+              'line-color': '#cbd5e1',
+              'label': 'data(label)',
+              'font-size': '9px',
+              'font-family': 'monospace',
+              'text-background-opacity': 1,
+              'text-background-color': '#ffffff',
+              'text-background-shape': 'roundrectangle',
+              'text-background-padding': '3px',
+              'color': '#475569',
+              'target-arrow-shape': 'none'
+            }
+          },
+          {
+            selector: 'edge[isManual]',
+            style: {
+              'line-color': '#0ea5e9', // Light blue for manual links
+              'line-style': 'dashed'
+            }
+          },
+          {
+            selector: 'node:selected',
+            style: {
+              'background-color': 'rgba(15, 118, 110, 0.1)',
+              'border-width': '2px',
+              'border-color': '#0f766e',
+              'border-style': 'solid'
+            }
+          }
+        ],
+        layout: {
+          name: 'preset' // Uses position coordinates passed explicitly
+        },
+        userZoomingEnabled: true,
+        userPanningEnabled: true,
+        boxSelectionEnabled: false
+      });
+
+      // Node interaction logic
+      cy.on('tap', 'node', function (evt) {
+        const node = evt.target;
+        
+        if (isLinkMode) {
+          if (!linkSourceNode) {
+            linkSourceNode = node;
+            statusText.innerText = `Origen: ${node.data('label')}. Selecciona el switch de destino...`;
+            node.select();
+          } else {
+            if (linkSourceNode.id() === node.id()) {
+              statusText.innerText = "No puedes enlazar un equipo consigo mismo. Selecciona otro switch.";
+              return;
+            }
+            
+            // Show modal to define port descriptions
+            document.getElementById("link-src-name").innerText = linkSourceNode.data('label');
+            document.getElementById("link-tgt-name").innerText = node.data('label');
+            document.getElementById("lbl-port-src").innerText = `Puerto en ${linkSourceNode.data('label')}`;
+            document.getElementById("lbl-port-tgt").innerText = `Puerto en ${node.data('label')}`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('linkModal'));
+            modal.show();
+            
+            // Confirm button logic in Modal
+            document.getElementById("btn-confirm-link").onclick = function () {
+              const srcPort = document.getElementById("port-src").value.trim();
+              const tgtPort = document.getElementById("port-tgt").value.trim();
+              
+              // Add edge visually
+              const edgeId = `edge-manual-new-${Date.now()}`;
+              const label = (srcPort && tgtPort) ? `${srcPort} <-> ${tgtPort} (M)` : (srcPort ? `${srcPort} -> ? (M)` : `? <- ${tgtPort} (M)`);
+              cy.add({
+                group: 'edges',
+                data: {
+                  id: edgeId,
+                  source: linkSourceNode.id(),
+                  target: node.id(),
+                  label: label,
+                  isManual: true
+                }
+              });
+
+              // Add to state array
+              topologyState.manual_links.push({
+                source: linkSourceNode.id(),
+                target: node.id(),
+                source_port: srcPort || null,
+                target_port: tgtPort || null
+              });
+
+              // Reset link mode
+              toggleLinkMode(false);
+              modal.hide();
+              
+              // Reset modal inputs
+              document.getElementById("port-src").value = "";
+              document.getElementById("port-tgt").value = "";
+            };
+          }
+        } else {
+          // Double tap or long click to navigate
+          statusText.innerHTML = `Switch seleccionado: <strong>${node.data('label')}</strong> (${node.data('ip')}) · Modelo: ${node.data('model') || '-'}`;
+        }
+      });
+
+      // Clear selection on canvas click
+      cy.on('tap', function (evt) {
+        if (evt.target === cy) {
+          if (isLinkMode) {
+            statusText.innerText = "Selecciona el switch de origen para el enlace...";
+            if (linkSourceNode) {
+              linkSourceNode.unselect();
+              linkSourceNode = null;
+            }
+          } else {
+            statusText.innerText = "Usa Drag & Drop para ubicar los switches en el plano.";
+          }
+        }
+      });
+
+      // Drag node triggers position updates locally
+      cy.on('dragfree', 'node', function (evt) {
+        const node = evt.target;
+        // If it was unplaced, remove isUnplaced flag & border
+        if (node.data('isUnplaced')) {
+          node.removeData('isUnplaced');
+          node.style({
+            'border-width': '0px'
+          });
+          // Refresh sidebar listing
+          refreshSidebar();
+        }
+      });
+    }
+
+    function refreshSidebar() {
+      const unplaced = cy.nodes().filter(node => node.style('border-width') === '2px');
+      if (unplaced.length > 0) {
+        unplacedList.innerHTML = "";
+        unplaced.forEach(node => {
+          const div = document.createElement("div");
+          div.className = "p-2 border rounded bg-light small d-flex justify-content-between align-items-center";
+          div.innerHTML = `
+            <div>
+              <strong class="text-dark d-block">${node.data('label')}</strong>
+              <span class="text-secondary font-monospace" style="font-size: 0.75rem;">${node.data('ip')}</span>
+            </div>
+            <span class="badge bg-warning text-dark">Pendiente</span>
+          `;
+          unplacedList.appendChild(div);
+        });
+      } else {
+        unplacedList.innerHTML = '<span class="text-muted small">Todos los equipos están ubicados en el plano.</span>';
+      }
+    }
+
+    // Toggle link drawing mode
+    function toggleLinkMode(active) {
+      isLinkMode = active;
+      linkSourceNode = null;
+      if (active) {
+        btnModeLink.classList.replace("btn-outline-secondary", "btn-danger");
+        btnModeLink.innerText = "🔌 Enlace Manual: ON";
+        statusText.innerText = "Modo Edición: Selecciona el switch de origen...";
+        cy.nodes().unselect();
+      } else {
+        btnModeLink.classList.replace("btn-danger", "btn-outline-secondary");
+        btnModeLink.innerText = "🔌 Enlace Manual: OFF";
+        statusText.innerText = "Usa Drag & Drop para ubicar los switches en el plano.";
+        cy.nodes().unselect();
+      }
+    }
+
+    btnModeLink.onclick = function () {
+      toggleLinkMode(!isLinkMode);
+    };
+
+    // Save positions and manual links to backend API
+    btnSave.onclick = function () {
+      if (!cy) return;
+      
+      const positions = {};
+      cy.nodes().forEach(node => {
+        // Only save position if the node has been placed/moved (not default border/isUnplaced)
+        if (!node.data('isUnplaced')) {
+          positions[node.id()] = {
+            x: Math.round(node.position().x),
+            y: Math.round(node.position().y)
+          };
+        }
+      });
+
+      topologyState.positions = positions;
+
+      btnSave.disabled = true;
+      btnSave.innerText = "Guardando...";
+
+      fetch("/api/topology/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(topologyState)
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "success") {
+          statusText.innerHTML = "🟢 <strong>Mapa guardado con éxito.</strong>";
+          setTimeout(() => {
+            statusText.innerText = "Usa Drag & Drop para ubicar los switches en el plano.";
+          }, 3000);
+        } else {
+          statusText.innerHTML = "🔴 <strong>Error al guardar el mapa.</strong>";
+        }
+      })
+      .catch(() => {
+        statusText.innerHTML = "🔴 <strong>Error de conexión al guardar el mapa.</strong>";
+      })
+      .finally(() => {
+        btnSave.disabled = false;
+        btnSave.innerText = "💾 Guardar Mapa";
+      });
+    };
+
+    // Floorplan configuration
+    btnBg.onclick = function () {
+      const url = prompt("Introduce la URL de la imagen del plano de fondo (ej. plano.png o una URL absoluta):", topologyState.background_url || "");
+      if (url !== null) {
+        const cleanedUrl = url.trim();
+        topologyState.background_url = cleanedUrl;
+        
+        if (cleanedUrl) {
+          floorplanContainer.style.backgroundImage = `url('${cleanedUrl}')`;
+          btnClearBg.classList.remove("d-none");
+          statusText.innerHTML = "Imagen de fondo cargada. Ajusta los nodos sobre ella.";
+        } else {
+          floorplanContainer.style.backgroundImage = "";
+          btnClearBg.classList.add("d-none");
+        }
+      }
+    };
+
+    btnClearBg.onclick = function () {
+      topologyState.background_url = "";
+      floorplanContainer.style.backgroundImage = "";
+      btnClearBg.classList.add("d-none");
+      statusText.innerHTML = "Plano de fondo removido.";
+    };
+  });
+</script>
+{% endblock %}

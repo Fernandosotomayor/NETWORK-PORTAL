@@ -1,0 +1,201 @@
+{
+  "hostname": "PDI_GalponNuevo",
+  "ip": "10.10.10.225",
+  "model": "GS42108P2S",
+  "firmware": "v3.0.5.48161.48161",
+  "location": "PDI_GalponNuevo",
+  "vlans": [
+    1,
+    2,
+    3,
+    10,
+    12,
+    13,
+    14,
+    15,
+    16,
+    20,
+    27,
+    29,
+    45,
+    50,
+    51,
+    52,
+    53,
+    80,
+    100,
+    150
+  ],
+  "ports": [
+    {
+      "name": "gi1",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        2,
+        3,
+        10,
+        12,
+        13,
+        14,
+        15,
+        16,
+        20,
+        27,
+        29,
+        45,
+        50,
+        51,
+        52,
+        53,
+        80,
+        100,
+        150
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi2",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        3,
+        13,
+        14,
+        15,
+        27,
+        29,
+        51,
+        52,
+        53,
+        100
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi3",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        1,
+        2,
+        3,
+        10,
+        12,
+        13,
+        14,
+        15,
+        16,
+        20,
+        27,
+        45,
+        50,
+        51,
+        52,
+        53,
+        80,
+        100
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi4",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi5",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        1,
+        2,
+        3,
+        10,
+        12,
+        13,
+        14,
+        15,
+        16,
+        20,
+        27,
+        45,
+        50,
+        51,
+        52,
+        53,
+        80,
+        100,
+        150
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi6",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        3,
+        13,
+        14,
+        15,
+        27,
+        29,
+        51,
+        52
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi7",
+      "mode": "access",
+      "access_vlan": 13,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi8",
+      "mode": "access",
+      "access_vlan": 15,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    }
+  ],
+  "metadata": {
+    "source_path": "backups\\PDI-GALPONNUEVO_2026-04-16_160404.cfg",
+    "parser_family": "planet_system_config",
+    "line_count": 168,
+    "warnings": [],
+    "errors": []
+  },
+  "management_vlan": 100,
+  "lldp_enabled": true,
+  "snmp": {
+    "enabled": true,
+    "communities": [
+      {
+        "name": "public",
+        "access": "ro"
+      }
+    ],
+    "location": ""
+  }
+}

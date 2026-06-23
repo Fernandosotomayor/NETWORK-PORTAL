@@ -1,0 +1,623 @@
+{
+  "hostname": "SW1-DATA",
+  "ip": "10.10.10.252",
+  "model": "GS421048P4S",
+  "firmware": "v3.0.5.48161.48161",
+  "location": "Data",
+  "vlans": [
+    1,
+    2,
+    3,
+    10,
+    12,
+    13,
+    14,
+    15,
+    16,
+    20,
+    45,
+    50,
+    51,
+    52,
+    53,
+    54,
+    100,
+    101,
+    150
+  ],
+  "ports": [
+    {
+      "name": "gi1",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi2",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi3",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi4",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi5",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi6",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi7",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi8",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi9",
+      "mode": "access",
+      "access_vlan": 54,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi10",
+      "mode": "access",
+      "access_vlan": 16,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi11",
+      "mode": "access",
+      "access_vlan": 54,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi12",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi13",
+      "mode": "access",
+      "access_vlan": 54,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi14",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi15",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi16",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi17",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi18",
+      "mode": "access",
+      "access_vlan": 15,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi19",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi20",
+      "mode": "access",
+      "access_vlan": 54,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi21",
+      "mode": "access",
+      "access_vlan": 10,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi22",
+      "mode": "access",
+      "access_vlan": 1,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null,
+      "warnings": [
+        "access port without explicit access VLAN; defaulted to VLAN 1"
+      ]
+    },
+    {
+      "name": "gi23",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi24",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi25",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi26",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi27",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi28",
+      "mode": "access",
+      "access_vlan": 54,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi29",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi30",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi31",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi32",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi33",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi34",
+      "mode": "access",
+      "access_vlan": 15,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi35",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi36",
+      "mode": "access",
+      "access_vlan": 15,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi37",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi38",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi39",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi40",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi41",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi42",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        10,
+        45
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi43",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        13,
+        51,
+        52,
+        53
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi44",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        13,
+        14,
+        15,
+        20,
+        51,
+        52,
+        53,
+        54,
+        101
+      ],
+      "description": "AP-1PisoA",
+      "lldp": null
+    },
+    {
+      "name": "gi45",
+      "mode": "access",
+      "access_vlan": 1,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null,
+      "warnings": [
+        "access port without explicit access VLAN; defaulted to VLAN 1"
+      ]
+    },
+    {
+      "name": "gi46",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi47",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        1,
+        10,
+        12,
+        13,
+        14,
+        16,
+        20,
+        45,
+        50,
+        51,
+        52,
+        53,
+        54,
+        100,
+        101,
+        150
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi48",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        10,
+        12,
+        13,
+        14,
+        15,
+        16,
+        20,
+        35,
+        45,
+        50,
+        51,
+        52,
+        53,
+        54,
+        100,
+        101,
+        150
+      ],
+      "description": "Trunk_SW_Cascada",
+      "lldp": null,
+      "warnings": [
+        "references VLANs not declared globally: 35"
+      ]
+    },
+    {
+      "name": "gi49",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        10,
+        12,
+        13,
+        14,
+        16,
+        20,
+        45,
+        50,
+        51,
+        52,
+        53,
+        54,
+        100,
+        101
+      ],
+      "description": "",
+      "lldp": null
+    }
+  ],
+  "metadata": {
+    "source_path": "backups\\SW1-DATA_2026-04-16_160404.cfg",
+    "parser_family": "planet_system_config",
+    "line_count": 531,
+    "warnings": [
+      "gi48 references undeclared VLANs 35"
+    ],
+    "errors": []
+  },
+  "management_vlan": 100,
+  "lldp_enabled": true,
+  "snmp": {
+    "enabled": true,
+    "communities": [
+      {
+        "name": "public",
+        "access": "ro"
+      }
+    ],
+    "location": ""
+  }
+}

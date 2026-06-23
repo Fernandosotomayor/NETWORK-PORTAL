@@ -1,0 +1,287 @@
+{
+  "hostname": "Casona-Lenin",
+  "ip": "10.10.10.219",
+  "model": "GS421024P2S",
+  "firmware": "v3.0.5.48161.48161",
+  "location": "Casona-Lenin",
+  "vlans": [
+    1,
+    12,
+    51,
+    52,
+    100,
+    150
+  ],
+  "ports": [
+    {
+      "name": "gi1",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        12,
+        15,
+        51,
+        52,
+        53,
+        100,
+        150
+      ],
+      "description": "SW3-Cascadas",
+      "lldp": null,
+      "warnings": [
+        "references VLANs not declared globally: 15,53"
+      ]
+    },
+    {
+      "name": "gi2",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi3",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi4",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi5",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi6",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi7",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi8",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi9",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi10",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi11",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi12",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi13",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi14",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi15",
+      "mode": "access",
+      "access_vlan": 150,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi16",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi17",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi18",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi19",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi20",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi21",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi22",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi23",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        15,
+        51,
+        52,
+        53,
+        150
+      ],
+      "description": "AP-CasonaLennin-Galpn",
+      "lldp": null,
+      "warnings": [
+        "references VLANs not declared globally: 15,53"
+      ]
+    },
+    {
+      "name": "gi24",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        12,
+        15,
+        51,
+        52,
+        53,
+        100,
+        150
+      ],
+      "description": "SW_Casona-Lennin2",
+      "lldp": null,
+      "warnings": [
+        "references VLANs not declared globally: 15,53"
+      ]
+    }
+  ],
+  "metadata": {
+    "source_path": "backups\\SW1-CASONA-LENIN_2026-04-16_160404.cfg",
+    "parser_family": "planet_system_config",
+    "line_count": 306,
+    "warnings": [
+      "gi1 references undeclared VLANs 15,53",
+      "gi23 references undeclared VLANs 15,53",
+      "gi24 references undeclared VLANs 15,53"
+    ],
+    "errors": []
+  },
+  "management_vlan": 100,
+  "lldp_enabled": true,
+  "snmp": {
+    "enabled": true,
+    "communities": [
+      {
+        "name": "public",
+        "access": "ro"
+      }
+    ],
+    "location": ""
+  }
+}

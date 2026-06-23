@@ -1,0 +1,27 @@
+# Directivas de Desarrollo y Estándares de Arquitectura (STLi Network Portal)
+
+Este archivo define las reglas y directrices obligatorias que deben seguir los agentes de inteligencia artificial y desarrolladores al modificar este repositorio.
+
+## 1. Python Core y Tipado Estático
+- **Tipado Estricto (PEP 484):** Todo código nuevo o modificado debe incluir *Type Hints* (anotaciones de tipo) completos para argumentos, retornos de funciones y variables de clase relevantes.
+- **Compatibilidad con Mypy:** El código debe superar las verificaciones de `mypy` sin errores de tipo ni de importación. Evitar el uso de `Any` a menos que sea estrictamente necesario.
+
+## 2. Arquitectura de FastAPI e Inyección de Dependencias
+- **Inyección de Dependencias Obligatoria:** Queda estrictamente prohibido instanciar clases de servicio, repositorios o clientes de APIs directamente dentro de las funciones de ruta (endpoints) de FastAPI.
+- **Uso de Depends():** Todos los recursos compartidos, repositorios y servicios deben inyectarse utilizando el mecanismo `Depends()` de FastAPI.
+
+## 3. Manejo de Errores y Programación Defensiva
+- **Resiliencia de Datos:** Asumir que los archivos JSON del inventario pueden estar ausentes, incompletos, bloqueados por el sistema operativo o corruptos.
+- **Excepciones y HTTPStatus:** Todo acceso a archivos o recursos externos debe encapsularse en bloques `try/except`. En caso de fallo o inconsistencia insalvable, elevar las excepciones HTTP correspondientes de FastAPI (`HTTPException`) con códigos de estado semánticos (ej. 404 para no encontrado, 422 para datos corruptos o inválidos).
+
+## 4. Configuración del Entorno (12-Factor App)
+- **Cero Hardcoding:** Prohibido escribir rutas de archivos, direcciones IP, puertos o credenciales fijas en el código de producción.
+- **Pydantic Settings:** Toda la configuración debe ser administrada a través de un esquema validado por `pydantic-settings` cargado dinámicamente desde variables de entorno y archivos `.env`.
+
+## 5. Límite Cognitivo y Modularidad
+- **Límite de Líneas:** Ningún archivo de código debe superar las 300 líneas de longitud.
+- **Refactorización Preventiva:** Si la adición de código nuevo causa que un archivo supere este límite, se debe proponer de inmediato su división en submódulos lógicos bien organizados (ej. `/routers`, `/services`, `/core`, `/utils`).
+
+## 6. Desarrollo Guiado por Pruebas (TDD)
+- **Pruebas Primero:** Antes de programar la lógica de negocio de cualquier funcionalidad nueva u hito del mapa de ruta (TODO.md), se deben definir y escribir primero las pruebas unitarias y de integración correspondientes en el directorio `tests/` utilizando `pytest`.
+- **Verificación:** Ejecutar la suite de pruebas unitarias periódicamente para garantizar que no existan regresiones en funcionalidades previas.

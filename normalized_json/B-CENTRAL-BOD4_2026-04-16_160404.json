@@ -1,0 +1,255 @@
+{
+  "hostname": "BodCentral-Cliente",
+  "ip": "10.10.10.203",
+  "model": "GS421024P2S",
+  "firmware": "v3.0.5.48161.48161",
+  "location": "ExBodega4",
+  "vlans": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    10,
+    12,
+    13,
+    14,
+    15,
+    20,
+    21,
+    25,
+    26,
+    27,
+    28,
+    45,
+    50,
+    51,
+    52,
+    53,
+    54,
+    100,
+    101
+  ],
+  "ports": [
+    {
+      "name": "gi1",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        2,
+        3,
+        4,
+        5,
+        10,
+        12,
+        13,
+        14,
+        15,
+        20,
+        21,
+        27,
+        45,
+        50,
+        51,
+        52,
+        53,
+        54,
+        100,
+        101
+      ],
+      "description": "Trunk_SW_Cascadas",
+      "lldp": null
+    },
+    {
+      "name": "gi2",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi3",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi4",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi5",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi6",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi7",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi8",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi9",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi10",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi11",
+      "mode": "access",
+      "access_vlan": 27,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi21",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi22",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        3,
+        27,
+        51,
+        52,
+        53
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi23",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        2,
+        3,
+        4,
+        5,
+        10,
+        12,
+        13,
+        14,
+        15,
+        20,
+        45,
+        50,
+        51,
+        52,
+        53,
+        54,
+        100,
+        101
+      ],
+      "description": "Trunk_SW_B.Central_OF",
+      "lldp": null
+    },
+    {
+      "name": "gi24",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        10,
+        12,
+        13,
+        14,
+        15,
+        20,
+        21,
+        45,
+        50,
+        51,
+        52,
+        53,
+        100,
+        101
+      ],
+      "description": "Trunk_SW_Galpon_Curvo",
+      "lldp": null
+    }
+  ],
+  "metadata": {
+    "source_path": "backups\\B-CENTRAL-BOD4_2026-04-16_160404.cfg",
+    "parser_family": "planet_system_config",
+    "line_count": 324,
+    "warnings": [],
+    "errors": []
+  },
+  "management_vlan": 100,
+  "lldp_enabled": true,
+  "snmp": {
+    "enabled": true,
+    "communities": [
+      {
+        "name": "public",
+        "access": "ro"
+      }
+    ],
+    "location": ""
+  }
+}

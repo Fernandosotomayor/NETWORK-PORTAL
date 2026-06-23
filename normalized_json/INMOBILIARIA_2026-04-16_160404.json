@@ -1,0 +1,393 @@
+{
+  "hostname": "Inmobiliaria",
+  "ip": "10.10.10.244",
+  "model": "GS-4210-24P2S",
+  "firmware": "v4.441b250728",
+  "location": "Inmobiliaria",
+  "vlans": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    10,
+    12,
+    13,
+    14,
+    15,
+    16,
+    20,
+    21,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    45,
+    51,
+    52,
+    53,
+    54,
+    70,
+    80,
+    100,
+    101,
+    104,
+    150,
+    200
+  ],
+  "ports": [
+    {
+      "name": "LAG8",
+      "mode": "access",
+      "access_vlan": 6,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE1",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        4,
+        5,
+        6,
+        7,
+        10,
+        12,
+        13,
+        14,
+        15,
+        16,
+        26,
+        45,
+        51,
+        52,
+        53,
+        54,
+        100,
+        101
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE2",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE3",
+      "mode": "access",
+      "access_vlan": 15,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE4",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE5",
+      "mode": "access",
+      "access_vlan": 14,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE6",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE7",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE8",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE9",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE10",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE11",
+      "mode": "access",
+      "access_vlan": 15,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE12",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE13",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE14",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE15",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE16",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE17",
+      "mode": "access",
+      "access_vlan": 6,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE18",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE19",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 45,
+      "allowed_vlans": [
+        6
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE20",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        7,
+        51,
+        52,
+        53
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE21",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        16,
+        24,
+        52,
+        53,
+        54,
+        100
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE22",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        10,
+        12,
+        13,
+        20,
+        45,
+        51,
+        52,
+        53,
+        54,
+        100
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE23",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        4,
+        5,
+        10,
+        12,
+        13,
+        14,
+        15,
+        20,
+        45,
+        51,
+        52,
+        53,
+        100,
+        101
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "GE24",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        4,
+        5,
+        6,
+        7,
+        10,
+        12,
+        13,
+        14,
+        15,
+        16,
+        24,
+        26,
+        45,
+        51,
+        52,
+        53,
+        54,
+        100,
+        101
+      ],
+      "description": "",
+      "lldp": null
+    }
+  ],
+  "metadata": {
+    "source_path": "backups\\INMOBILIARIA_2026-04-16_160404.cfg",
+    "parser_family": "planet_system_config",
+    "line_count": 399,
+    "warnings": [],
+    "errors": []
+  },
+  "management_vlan": 100,
+  "lldp_enabled": true,
+  "snmp": {
+    "enabled": true,
+    "communities": [
+      {
+        "name": "public",
+        "access": "ro"
+      }
+    ],
+    "location": ""
+  }
+}

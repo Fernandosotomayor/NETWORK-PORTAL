@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Diferencias | STLi Network Portal{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <a class="btn btn-sm btn-outline-secondary mb-3" href="javascript:history.back()">← Volver</a>
+  <h1 class="h3 mb-1">Detalle de Diferencias</h1>
+  <p class="text-secondary mb-0">Revisión <code>{{ commit_hash | truncate(8, True, '') }}</code> en el archivo <strong>{{ filename }}</strong>.</p>
+</div>
+
+<section class="content-panel bg-light p-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <span class="badge bg-secondary font-monospace">{{ commit_hash }}</span>
+    </div>
+  </div>
+  
+  <div class="bg-white border rounded p-3 overflow-auto font-monospace" style="font-size: 0.85rem; max-height: 700px; white-space: pre-wrap; word-break: break-all;">
+    {% if not diff_content %}
+      <span class="text-muted">No se detectaron diferencias o el archivo no existe en esta revisión.</span>
+    {% else %}
+      {% for line in diff_content.splitlines() %}
+        {% if line.startswith('+') and not line.startswith('+++') %}
+          <div class="text-success bg-success-subtle px-2" style="border-left: 3px solid #198754;">{{ line }}</div>
+        {% elif line.startswith('-') and not line.startswith('---') %}
+          <div class="text-danger bg-danger-subtle px-2" style="border-left: 3px solid #dc3545;">{{ line }}</div>
+        {% elif line.startswith('@@') %}
+          <div class="text-info bg-info-subtle px-2">{{ line }}</div>
+        {% else %}
+          <div class="text-secondary px-2">{{ line }}</div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

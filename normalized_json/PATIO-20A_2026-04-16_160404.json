@@ -1,0 +1,123 @@
+{
+  "hostname": "Patio20A",
+  "ip": "10.10.10.206",
+  "model": "GS42108P2S",
+  "firmware": "v3.0.5.48161.48161",
+  "location": "Patio20",
+  "vlans": [
+    1,
+    10,
+    12,
+    13,
+    50,
+    51,
+    52,
+    53,
+    100
+  ],
+  "ports": [
+    {
+      "name": "gi1",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        10,
+        12,
+        13,
+        50,
+        51,
+        52,
+        53,
+        100
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi2",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi3",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi4",
+      "mode": "access",
+      "access_vlan": 12,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi6",
+      "mode": "access",
+      "access_vlan": 100,
+      "native_vlan": null,
+      "allowed_vlans": [],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi7",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": 100,
+      "allowed_vlans": [
+        13,
+        51
+      ],
+      "description": "",
+      "lldp": null
+    },
+    {
+      "name": "gi8",
+      "mode": "trunk",
+      "access_vlan": null,
+      "native_vlan": null,
+      "allowed_vlans": [
+        10,
+        12,
+        13,
+        50,
+        51,
+        52,
+        53,
+        100
+      ],
+      "description": "",
+      "lldp": null
+    }
+  ],
+  "metadata": {
+    "source_path": "backups\\PATIO-20A_2026-04-16_160404.cfg",
+    "parser_family": "planet_system_config",
+    "line_count": 145,
+    "warnings": [],
+    "errors": []
+  },
+  "management_vlan": 100,
+  "lldp_enabled": true,
+  "snmp": {
+    "enabled": true,
+    "communities": [
+      {
+        "name": "public",
+        "access": "ro"
+      }
+    ],
+    "location": ""
+  }
+}

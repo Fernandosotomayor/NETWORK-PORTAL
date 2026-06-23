@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | STLi Network Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1">Dashboard</h1>
+    <p class="text-secondary mb-0">Inventario generado desde los JSON normalizados del parser.</p>
+  </div>
+  <a class="btn btn-dark align-self-lg-start" href="{{ url_for('inventory') }}">Ver inventario</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4">
+    <div class="metric-card">
+      <div class="metric-label">Switches</div>
+      <div class="metric-value">{{ stats.switches }}</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="metric-card">
+      <div class="metric-label">VLANs únicas</div>
+      <div class="metric-value">{{ stats.unique_vlans }}</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="metric-card">
+      <div class="metric-label">Puertos</div>
+      <div class="metric-value">{{ stats.ports }}</div>
+    </div>
+  </div>
+</div>
+
+<section class="content-panel">
+  <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+    <h2 class="h5 mb-0">Switches recientes</h2>
+    <span class="badge text-bg-secondary">{{ warnings_count }} advertencias</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>IP</th>
+          <th>Modelo</th>
+          <th>VLANs</th>
+          <th>Puertos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for switch in switches %}
+        <tr>
+          <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=switch.slug) }}">{{ switch.hostname }}</a></td>
+          <td>{{ switch.ip }}</td>
+          <td>{{ switch.model or '-' }}</td>
+          <td>{{ switch.vlans | length }}</td>
+          <td>{{ switch.ports | length }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

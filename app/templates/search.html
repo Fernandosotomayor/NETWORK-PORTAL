@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Búsqueda | STLi Network Portal{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h1 class="h3 mb-1">Búsqueda</h1>
+  <p class="text-secondary mb-0">Busca por VLAN, nombre de switch o descripción de puerto.</p>
+</div>
+
+<form class="row g-2 mb-4" action="{{ url_for('search') }}" method="get">
+  <div class="col-12 col-lg-10">
+    <input class="form-control" name="q" value="{{ query }}" placeholder="Ej: 100, Cascadas, Trunk_SW">
+  </div>
+  <div class="col-12 col-lg-2 d-grid">
+    <button class="btn btn-dark" type="submit">Buscar</button>
+  </div>
+</form>
+
+{% if not query %}
+  <div class="content-panel empty-state">Ingresa un criterio de búsqueda.</div>
+{% else %}
+  <div class="row g-4">
+    <div class="col-12">
+      <section class="content-panel">
+        <div class="p-3 border-bottom">
+          <h2 class="h5 mb-0">Switches</h2>
+        </div>
+        {% if results.switches %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <tbody>
+              {% for item in results.switches %}
+              <tr>
+                <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">{{ item.switch.hostname }}</a></td>
+                <td>{{ item.switch.ip }}</td>
+                <td>{{ item.switch.model or '-' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">Sin switches coincidentes.</div>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="col-12">
+      <section class="content-panel">
+        <div class="p-3 border-bottom">
+          <h2 class="h5 mb-0">Puertos</h2>
+        </div>
+        {% if results.ports %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Switch</th>
+                <th>Puerto</th>
+                <th>Modo</th>
+                <th>Access</th>
+                <th>Nativa</th>
+                <th>Permitidas</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in results.ports %}
+              <tr>
+                <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">{{ item.switch.hostname }}</a></td>
+                <td>{{ item.port.name }}</td>
+                <td>{{ item.port.mode }}</td>
+                <td>{{ item.port.access_vlan or '-' }}</td>
+                <td>{{ item.port.native_vlan or '-' }}</td>
+                <td class="vlan-list">{{ item.port.allowed_vlans | default([]) | vlans }}</td>
+                <td>{{ item.port.description or '-' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">Sin puertos coincidentes.</div>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="col-12">
+      <section class="content-panel">
+        <div class="p-3 border-bottom">
+          <h2 class="h5 mb-0">VLANs</h2>
+        </div>
+        {% if results.vlans %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>VLAN</th>
+                <th>Switch</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in results.vlans %}
+              <tr>
+                <td><span class="badge text-bg-light border">{{ item.vlan }}</span></td>
+                <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">{{ item.switch.hostname }}</a></td>
+                <td>{{ item.switch.ip }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">Sin VLANs coincidentes.</div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
