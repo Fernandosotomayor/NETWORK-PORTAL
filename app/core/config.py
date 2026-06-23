@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     TEMPLATES_DIR: Path = Path("app/templates")
     BACKUPS_GIT_DIR: Path = Path("backups")
     STATE_FILE: Path = Path("data/topology_state.json")
+    OXIDIZED_ARCHIVE_DIR: Path = Path(r"C:\Users\fernando.sotomayor\SCHIAPPACASSE INVESTMENT S.A\Gerencia TI - Infraestructura - Documentos\Infraestructura\Backup\switches 2026 - oxidized\oxidized-archive")
+    OXIDIZED_REPO_URL: str = "https://github.com/Fernandosotomayor/oxidized-archive.git"
 
     @model_validator(mode="after")
     def resolve_relative_paths(self) -> Settings:
@@ -38,7 +40,10 @@ class Settings(BaseSettings):
             self.BACKUPS_GIT_DIR = (self.BASE_DIR / self.BACKUPS_GIT_DIR).resolve()
         if not self.STATE_FILE.is_absolute():
             self.STATE_FILE = (self.BASE_DIR / self.STATE_FILE).resolve()
+        if not self.OXIDIZED_ARCHIVE_DIR.is_absolute():
+            self.OXIDIZED_ARCHIVE_DIR = (self.BASE_DIR / self.OXIDIZED_ARCHIVE_DIR).resolve()
         return self
+
 
     model_config = SettingsConfigDict(
         env_file=".env",

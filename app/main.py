@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -12,6 +12,7 @@ from .repository import JsonInventoryRepository, compact_vlan_list
 from .services.audit import generate_global_report
 from .services.git_history import get_file_diff, get_file_history, get_recent_changes
 from .services.topology import generate_topology, TopologyState, load_topology_state, save_topology_state
+from .services.webhook import run_oxidized_sync
 
 app = FastAPI(title="STLi Network Portal")
 app.mount("/static", StaticFiles(directory=settings.STATIC_DIR), name="static")
@@ -182,6 +183,13 @@ def post_topology_state(state: TopologyState) -> dict[str, str]:
     if not success:
         raise HTTPException(status_code=500, detail="Failed to save state to file")
     return {"status": "success"}
+
+
+@app.post("/api/webhooks/oxidized")
+def post_webhook_oxidized(background_tasks: BackgroundTasks) -> dict[str, str]:
+    """Webhook endpoint to receive Oxidized backup change events."""
+    background_tasks.add_task(run_oxidized_sync)
+    return {"status": "accepted", "message": "Synchronization started in the background"}
 
 
 
