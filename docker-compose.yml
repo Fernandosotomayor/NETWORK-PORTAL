@@ -1,0 +1,22 @@
+services:
+  network-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: network-portal
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist portal state and databases
+      - ./data:/app/data
+      # Mount the VM's oxidized archive directory
+      - /home/ubuntu/monitoring/oxidized/archive:/app/oxidized-archive
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+      - DATA_DIR=/app/data/normalized_json
+      - BACKUPS_GIT_DIR=/app/data/backups
+      - STATE_FILE=/app/data/topology_state.json
+      - OXIDIZED_ARCHIVE_DIR=/app/oxidized-archive
+      - OXIDIZED_REPO_URL=https://github.com/Fernandosotomayor/oxidized-archive.git

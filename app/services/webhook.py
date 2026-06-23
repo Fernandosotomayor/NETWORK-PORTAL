@@ -31,6 +31,17 @@ def run_oxidized_sync() -> dict[str, Any]:
     # 1. Ensure target backups dir exists
     backups_dir.mkdir(parents=True, exist_ok=True)
     
+    # Initialize backups git repository if it doesn't exist
+    if not (backups_dir / ".git").exists():
+        try:
+            LOGGER.info(f"Initializing empty git repository in {backups_dir}")
+            subprocess.run(["git", "init", "-b", "main"], cwd=str(backups_dir), capture_output=True, text=True, check=True)
+            subprocess.run(["git", "config", "user.name", "Oxidized Sync"], cwd=str(backups_dir), capture_output=True, text=True, check=True)
+            subprocess.run(["git", "config", "user.email", "sync@local"], cwd=str(backups_dir), capture_output=True, text=True, check=True)
+        except Exception:
+            LOGGER.exception("Failed to initialize git repository in backups directory")
+
+    
     # 2. Check/pull remote archive repo
     git_success = False
     try:
