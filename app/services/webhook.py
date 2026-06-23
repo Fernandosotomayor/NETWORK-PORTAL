@@ -21,12 +21,19 @@ def extract_timestamp(filename: str) -> str:
 
 def run_oxidized_sync() -> dict[str, Any]:
     """Sync backups from the remote repository, copy the latest, and parse them."""
+    # Configure git to trust all directories to avoid "dubious ownership" errors inside Docker
+    try:
+        subprocess.run(["git", "config", "--global", "--add", "safe.directory", "*"], capture_output=True, check=True)
+    except Exception:
+        LOGGER.exception("Failed to configure git safe directory")
+
     archive_dir = settings.OXIDIZED_ARCHIVE_DIR
     repo_url = settings.OXIDIZED_REPO_URL
     backups_dir = settings.BACKUPS_GIT_DIR
     output_dir = settings.DATA_DIR
     
     LOGGER.info("Starting Oxidized synchronization task...")
+
     
     # 1. Ensure target backups dir exists
     backups_dir.mkdir(parents=True, exist_ok=True)
