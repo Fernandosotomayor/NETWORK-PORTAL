@@ -80,7 +80,7 @@
 
           // Default string comparison
           return asc ? v1.toString().localeCompare(v2) : v2.toString().localeCompare(v1);
-        })(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+        })(getCellValue(a, idx), getCellValue(b, idx));
 
         document.querySelectorAll("table.table-sortable").forEach(table => {
           const headers = table.querySelectorAll("thead th");
@@ -96,7 +96,6 @@
             indicator.style.fontSize = "0.75rem";
             th.appendChild(indicator);
 
-            let asc = true;
             th.addEventListener("click", () => {
               const tbody = table.querySelector("tbody");
               if (!tbody) return;
@@ -105,22 +104,26 @@
                 return !row.querySelector("td[colspan]");
               });
 
-              rows.sort(comparer(idx, asc));
+              // Toggle direction based on current status
+              const isAscending = th.getAttribute("data-sort") !== "asc";
 
-              // Reset all indicators in this table
+              rows.sort(comparer(idx, isAscending));
+
+              // Reset all indicators and attributes in this table
               headers.forEach(h => {
+                h.removeAttribute("data-sort");
                 const ind = h.querySelector(".sort-indicator");
                 if (ind) {
                   ind.className = "bi bi-arrow-down-up ms-2 text-muted opacity-50 sort-indicator";
                 }
               });
 
-              // Set active indicator
-              indicator.className = asc ? "bi bi-caret-up-fill ms-2 text-primary sort-indicator" : "bi bi-caret-down-fill ms-2 text-primary sort-indicator";
+              // Set active indicator and attribute
+              th.setAttribute("data-sort", isAscending ? "asc" : "desc");
+              indicator.className = isAscending ? "bi bi-caret-up-fill ms-2 text-primary sort-indicator" : "bi bi-caret-down-fill ms-2 text-primary sort-indicator";
 
               // Re-append rows
               rows.forEach(tr => tbody.appendChild(tr));
-              asc = !asc;
             });
           });
         });
