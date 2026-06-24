@@ -28,4 +28,4 @@ services:
     container_name: network-webssh
     restart: unless-stopped
     ports:
-      - "2222:2222"
+      - "80:2222"

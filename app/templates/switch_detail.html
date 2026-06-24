@@ -203,8 +203,7 @@
       }
       
       // Abrir la terminal WebSSH2 en una nueva pestaña usando el hostname dinámico
-      const port = "2222";
-      const webSshUrl = `http://${window.location.hostname}:${port}/ssh/host/${ip}?user=sis_sw`;
+      const webSshUrl = `http://${window.location.hostname}/ssh/host/${ip}?user=sis_sw`;
       window.open(webSshUrl, "_blank");
 
       // Limpiar el mensaje después de 8 segundos si no ha cambiado por un ping
