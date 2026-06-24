@@ -49,7 +49,7 @@
   </div>
   <div class="p-3">
     <div class="d-flex flex-wrap gap-2 align-items-center">
-      <a class="btn btn-dark" href="ssh://{{ switch.ip }}">
+      <a class="btn btn-dark" href="ssh://{{ switch.ip }}" onclick="handleSSHClick(event, '{{ switch.ip }}')">
         <i class="bi bi-terminal me-1"></i> Conexión SSH
       </a>
       <a class="btn btn-outline-dark" href="http://{{ switch.ip }}" target="_blank">
@@ -158,6 +158,68 @@
 </section>
 
 <script>
+  function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      return true;
+    } catch (err) {
+      console.error("Fallback: no se pudo copiar", err);
+      return false;
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  }
+
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text)
+        .then(() => true)
+        .catch(() => fallbackCopyTextToClipboard(text));
+    } else {
+      return Promise.resolve(fallbackCopyTextToClipboard(text));
+    }
+  }
+
+  function handleSSHClick(event, ip) {
+    event.preventDefault();
+    const command = `ssh sis_sw@${ip}`;
+    
+    copyTextToClipboard(command).then(success => {
+      const status = document.getElementById("ping-status");
+      if (success) {
+        status.className = "ms-2 text-primary font-monospace small";
+        status.innerHTML = `<i class="bi bi-clipboard-check-fill me-1"></i>¡Comando copiado! (<code>${command}</code>)`;
+      } else {
+        status.className = "ms-2 text-secondary font-monospace small";
+        status.innerHTML = `Comando: <code>${command}</code>`;
+      }
+      
+      // Intentar abrir el protocolo ssh:// de forma asíncrona
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = `ssh://${ip}`;
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 500);
+
+      // Limpiar el mensaje después de 8 segundos si no ha cambiado por un ping
+      setTimeout(() => {
+        if (status.innerHTML.includes("Comando") || status.innerHTML.includes("copiado")) {
+          status.innerHTML = "";
+        }
+      }, 8000);
+    });
+  }
+
   function runPing(ip) {
     const btn = document.getElementById("btn-ping");
     const icon = document.getElementById("icon-ping");
