@@ -78,3 +78,13 @@ body {
   padding: 2rem;
   text-align: center;
 }
+
+/* Table sorting styling */
+.table-sortable th.pe-4 {
+  padding-right: 1.8rem !important;
+}
+
+.sort-indicator {
+  transition: all 0.15s ease-in-out;
+  display: inline-block;
+}

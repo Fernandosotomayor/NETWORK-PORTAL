@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import sys
+import subprocess
+import ipaddress
+from typing import Any
+
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -190,6 +195,37 @@ def post_webhook_oxidized(background_tasks: BackgroundTasks) -> dict[str, str]:
     """Webhook endpoint to receive Oxidized backup change events."""
     background_tasks.add_task(run_oxidized_sync)
     return {"status": "accepted", "message": "Synchronization started in the background"}
+
+
+@app.post("/api/switches/{ip}/ping")
+def post_ping_switch(ip: str) -> dict[str, Any]:
+    """Ping a switch IP address and return its online status and response output."""
+    try:
+        ipaddress.IPv4Address(ip)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid IPv4 address")
+
+    if sys.platform.startswith("win"):
+        cmd = ["ping", "-n", "2", "-w", "2000", ip]
+    else:
+        cmd = ["ping", "-c", "2", "-W", "2", ip]
+
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        is_online = res.returncode == 0
+        return {
+            "status": "success",
+            "online": is_online,
+            "output": res.stdout or res.stderr
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "status": "success",
+            "online": False,
+            "output": "Ping timeout expired"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 

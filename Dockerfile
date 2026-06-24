@@ -2,9 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install git client needed for git diff/log parsing of backups
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
+    openssh-client \
+    iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

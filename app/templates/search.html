@@ -28,12 +28,19 @@
         </div>
         {% if results.switches %}
         <div class="table-responsive">
-          <table class="table table-hover">
+          <table class="table table-hover table-sortable">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>IP</th>
+                <th>Modelo</th>
+              </tr>
+            </thead>
             <tbody>
               {% for item in results.switches %}
               <tr>
                 <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">{{ item.switch.hostname }}</a></td>
-                <td>{{ item.switch.ip }}</td>
+                <td><a href="http://{{ item.switch.ip }}" target="_blank" class="text-decoration-none text-dark"><i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ item.switch.ip }}</a></td>
                 <td>{{ item.switch.model or '-' }}</td>
               </tr>
               {% endfor %}
@@ -53,7 +60,7 @@
         </div>
         {% if results.ports %}
         <div class="table-responsive">
-          <table class="table table-hover align-middle">
+          <table class="table table-hover align-middle table-sortable">
             <thead>
               <tr>
                 <th>Switch</th>
@@ -93,7 +100,7 @@
         </div>
         {% if results.vlans %}
         <div class="table-responsive">
-          <table class="table table-hover">
+          <table class="table table-hover table-sortable">
             <thead>
               <tr>
                 <th>VLAN</th>
@@ -106,7 +113,7 @@
               <tr>
                 <td><span class="badge text-bg-light border">{{ item.vlan }}</span></td>
                 <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">{{ item.switch.hostname }}</a></td>
-                <td>{{ item.switch.ip }}</td>
+                <td><a href="http://{{ item.switch.ip }}" target="_blank" class="text-decoration-none text-dark"><i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ item.switch.ip }}</a></td>
               </tr>
               {% endfor %}
             </tbody>

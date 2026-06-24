@@ -58,8 +58,29 @@ class JsonInventoryRepository:
         self.data_dir = data_dir
 
     def list_switches(self) -> list[SwitchRecord]:
+        # Group by switch base name to only load the latest version of each switch
+        latest_paths: dict[str, tuple[str, Path]] = {}
+        for json_path in self.data_dir.glob("*.json"):
+            # Extract base name and timestamp
+            # E.g., B-CENTRAL-BOD4_2026-06-23_223541.json -> base: B-CENTRAL-BOD4, ts: 2026-06-23_223541
+            # E.g., B-CENTRAL-BOD4.json -> base: B-CENTRAL-BOD4, ts: ""
+            match = re.search(r"^(.*?)(?:_(\d{4}-\d{2}-\d{2}_\d{6}))?$", json_path.stem)
+            if match:
+                base_name = match.group(1)
+                timestamp = match.group(2) or ""
+            else:
+                base_name = json_path.stem
+                timestamp = ""
+            
+            if base_name not in latest_paths:
+                latest_paths[base_name] = (timestamp, json_path)
+            else:
+                existing_timestamp, _ = latest_paths[base_name]
+                if timestamp > existing_timestamp:
+                    latest_paths[base_name] = (timestamp, json_path)
+                    
         records: list[SwitchRecord] = []
-        for json_path in sorted(self.data_dir.glob("*.json")):
+        for _, (_, json_path) in sorted(latest_paths.items()):
             try:
                 data = json.loads(json_path.read_text(encoding="utf-8"))
                 records.append(SwitchRecord.from_json(json_path, data))

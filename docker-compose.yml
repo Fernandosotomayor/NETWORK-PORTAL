@@ -12,6 +12,8 @@ services:
       - ./data:/app/data
       # Mount the VM's oxidized archive directory
       - /home/ubuntu/monitoring/oxidized/archive:/app/oxidized-archive
+      # Mount host SSH credentials for private git pulls
+      - /home/ubuntu/.ssh:/root/.ssh:ro
     environment:
       - APP_HOST=0.0.0.0
       - APP_PORT=8000
@@ -19,4 +21,4 @@ services:
       - BACKUPS_GIT_DIR=/app/data/backups
       - STATE_FILE=/app/data/topology_state.json
       - OXIDIZED_ARCHIVE_DIR=/app/oxidized-archive
-      - OXIDIZED_REPO_URL=https://github.com/Fernandosotomayor/oxidized-archive.git
+      - OXIDIZED_REPO_URL=git@github.com:STLi-SPA/INFRA-BACKUPS.git
