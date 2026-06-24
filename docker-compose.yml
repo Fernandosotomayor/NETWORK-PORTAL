@@ -22,3 +22,10 @@ services:
       - STATE_FILE=/app/data/topology_state.json
       - OXIDIZED_ARCHIVE_DIR=/app/oxidized-archive
       - OXIDIZED_REPO_URL=git@github.com:STLi-SPA/INFRA-BACKUPS.git
+
+  webssh:
+    image: billchurch/webssh2:latest
+    container_name: network-webssh
+    restart: unless-stopped
+    ports:
+      - "2222:2222"
