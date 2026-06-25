@@ -4,49 +4,65 @@
 
 {% block content %}
 <div class="mb-4">
-  <h1 class="h3 mb-1">Topología de Red NOC</h1>
-  <p class="text-secondary mb-0">Gestión interactiva, enrutamiento ortogonal y persistencia de posiciones sobre plano.</p>
+  <h1 class="h3 mb-1 fw-bold text-dark">Topología de Red NOC</h1>
+  <p class="text-secondary mb-0">Gestión interactiva del diagrama de red, enrutamiento ortogonal y persistencia de ubicaciones.</p>
 </div>
 
-<!-- Toolbar -->
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 bg-light p-2 rounded border gap-2">
-  <div class="d-flex gap-2">
-    <button class="btn btn-sm btn-dark" id="btn-save">💾 Guardar Mapa</button>
-    <button class="btn btn-sm btn-outline-dark" id="btn-bg">🖼️ Plano de Fondo</button>
-    <button class="btn btn-sm btn-outline-danger d-none" id="btn-clear-bg">Quitar Plano</button>
-    <button class="btn btn-sm btn-outline-secondary" id="btn-mode-link">🔌 Enlace Manual: OFF</button>
-  </div>
-  <div class="text-secondary small fw-semibold" id="status-text">
-    Usa Drag & Drop para ubicar los switches en el plano.
+<!-- AWS Style Toolbar -->
+<div class="aws-panel mb-4">
+  <div class="aws-panel-body py-2 px-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-aws-primary" id="btn-save">
+        <i class="bi bi-floppy me-1"></i> Guardar Distribución
+      </button>
+      <button class="btn btn-sm btn-aws-secondary" id="btn-bg">
+        <i class="bi bi-image me-1"></i> Subir Plano de Fondo
+      </button>
+      <button class="btn btn-sm btn-aws-secondary d-none text-danger" id="btn-clear-bg">
+        <i class="bi bi-trash me-1"></i> Quitar Plano
+      </button>
+      <button class="btn btn-sm btn-aws-secondary" id="btn-mode-link">
+        <i class="bi bi-node-plus me-1"></i> Enlace Manual: OFF
+      </button>
+    </div>
+    <div class="text-secondary small fw-semibold" id="status-text">
+      <i class="bi bi-info-circle me-1"></i>Arrastra los switches para ubicarlos sobre el plano de red.
+    </div>
   </div>
 </div>
 
 <div class="row g-3 mb-4">
   <!-- Sidebar of Unplaced switches -->
   <div class="col-12 col-xl-3">
-    <div class="content-panel h-100 p-3">
-      <h2 class="h6 border-bottom pb-2 mb-2">Equipos sin Ubicar</h2>
-      <div id="unplaced-list" class="d-flex flex-column gap-2" style="max-height: 580px; overflow-y: auto;">
-        <span class="text-muted small">Todos los equipos están ubicados en el plano.</span>
+    <div class="aws-panel h-100">
+      <div class="aws-panel-header">
+        <h2>Equipos sin Ubicar</h2>
+      </div>
+      <div class="aws-panel-body">
+        <div id="unplaced-list" class="d-flex flex-column gap-2" style="max-height: 520px; overflow-y: auto;">
+          <span class="text-muted small"><i class="bi bi-check-circle me-1 text-success"></i>Todos los equipos están ubicados en el plano.</span>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Graph Canvas -->
   <div class="col-12 col-xl-9">
-    <div id="network-container" style="position: relative; border: 1px solid #d8dee8; border-radius: 8px; overflow: hidden; height: 650px; background-color: #fafbfc;">
-      <!-- Subtle blueprint grid pattern -->
-      <div id="blueprint-grid" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 0;
-           background-size: 40px 40px;
-           background-image: linear-gradient(to right, rgba(203, 213, 225, 0.25) 1px, transparent 1px),
-                             linear-gradient(to bottom, rgba(203, 213, 225, 0.25) 1px, transparent 1px);
-           background-position: center;"></div>
-      
-      <!-- Floorplan background image container -->
-      <div id="floorplan-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.85;"></div>
-      
-      <!-- Cytoscape container -->
-      <div id="network-graph" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
+    <div class="aws-panel h-100">
+      <div id="network-container" style="position: relative; overflow: hidden; height: 600px; background-color: #fafbfc;">
+        <!-- Blueprint grid pattern -->
+        <div id="blueprint-grid" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 0;
+             background-size: 30px 30px;
+             background-image: linear-gradient(to right, rgba(112, 114, 114, 0.1) 1px, transparent 1px),
+                               linear-gradient(to bottom, rgba(112, 114, 114, 0.1) 1px, transparent 1px);
+             background-position: center;"></div>
+        
+        <!-- Floorplan background image container -->
+        <div id="floorplan-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.8;"></div>
+        
+        <!-- Cytoscape container -->
+        <div id="network-graph" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -55,26 +71,26 @@
 <div class="modal fade" id="linkModal" tabindex="-1" aria-labelledby="linkModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="linkModalLabel">Nuevo Enlace Manual</h5>
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold" id="linkModalLabel">Añadir Enlace Manual</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <p class="small text-secondary">Establecer enlace manual entre <strong id="link-src-name">S1</strong> y <strong id="link-tgt-name">S2</strong>.</p>
         <div class="row g-2">
           <div class="col-6">
-            <label class="form-label small mb-1" id="lbl-port-src">Puerto en S1</label>
-            <input type="text" class="form-control form-control-sm" id="port-src" placeholder="ej. gi1">
+            <label class="form-label small mb-1 fw-semibold text-dark" id="lbl-port-src">Puerto en S1</label>
+            <input type="text" class="form-control form-control-sm" id="port-src" placeholder="ej. gi1/0/1">
           </div>
           <div class="col-6">
-            <label class="form-label small mb-1" id="lbl-port-tgt">Puerto en S2</label>
-            <input type="text" class="form-control form-control-sm" id="port-tgt" placeholder="ej. gi2">
+            <label class="form-label small mb-1 fw-semibold text-dark" id="lbl-port-tgt">Puerto en S2</label>
+            <input type="text" class="form-control form-control-sm" id="port-tgt" placeholder="ej. gi1/0/22">
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-sm btn-dark" id="btn-confirm-link">Crear Enlace</button>
+        <button type="button" class="btn btn-sm btn-aws-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-aws-primary" id="btn-confirm-link">Establecer Enlace</button>
       </div>
     </div>
   </div>
@@ -89,28 +105,34 @@
     const backendLinks = {{ data.links | tojson }};
     let topologyState = { positions: {}, background_url: "", manual_links: [] };
 
-    // SVG Switch Icon URL
+    // SVG Switch Icon URL - Redesigned with STLi Blue corporate identity
     const switchSvg = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
       <svg xmlns="http://www.w3.org/2000/svg" width="100" height="40" viewBox="0 0 100 40">
-        <rect x="2" y="2" width="96" height="36" rx="4" fill="#0f766e" stroke="#0d5c56" stroke-width="2.5"/>
-        <rect x="10" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
-        <rect x="20" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
-        <rect x="30" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
-        <rect x="40" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
-        <rect x="50" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
-        <rect x="60" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
-        <rect x="70" y="8" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <!-- Switch Chassis - STLi Blue background -->
+        <rect x="2" y="2" width="96" height="36" rx="4" fill="#0060A8" stroke="#004F8A" stroke-width="2"/>
+        
+        <!-- Ports (Active - STLi Light Blue) -->
+        <rect x="10" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
+        <rect x="20" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
+        <rect x="30" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
+        <rect x="40" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
+        <rect x="50" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
+        <rect x="60" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
+        <rect x="70" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
         <rect x="80" y="8" width="6" height="6" fill="#cbd5e1" rx="1"/>
         
-        <rect x="10" y="20" width="6" height="6" fill="#14b8a6" rx="1"/>
-        <rect x="20" y="20" width="6" height="6" fill="#14b8a6" rx="1"/>
+        <!-- Ports (Passive - Light Gray) -->
+        <rect x="10" y="20" width="6" height="6" fill="#41AFF9" rx="1"/>
+        <rect x="20" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
         <rect x="30" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
         <rect x="40" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
         <rect x="50" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
         <rect x="60" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
         <rect x="70" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
         <rect x="80" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        <circle cx="92" cy="17" r="2.5" fill="#22c55e"/>
+        
+        <!-- Status Indicator LED (Green for active device) -->
+        <circle cx="92" cy="20" r="2.5" fill="#1d8102"/>
       </svg>
     `);
 
@@ -154,37 +176,20 @@
             position: { x: savedPos.x, y: savedPos.y }
           });
         } else {
-          // New/Unplaced node: store to place at default layout & list in sidebar
+          // Unplaced: list in sidebar and place at dynamic offsets on the left
           unplaced.push(node);
-          // Place vertically on the left side
           elements.push({
             group: 'nodes',
             data: { id: node.id, label: node.label, ip: node.ip, model: node.model, isUnplaced: true },
-            position: { x: 80, y: 80 + (unplaced.length - 1) * 75 }
+            position: { x: 70, y: 70 + (unplaced.length - 1) * 75 }
           });
         }
       });
 
       // Update sidebar listing of unplaced switches
-      if (unplaced.length > 0) {
-        unplacedList.innerHTML = "";
-        unplaced.forEach(node => {
-          const div = document.createElement("div");
-          div.className = "p-2 border rounded bg-light small d-flex justify-content-between align-items-center";
-          div.innerHTML = `
-            <div>
-              <strong class="text-dark d-block">${node.label}</strong>
-              <span class="text-secondary font-monospace" style="font-size: 0.75rem;">${node.ip}</span>
-            </div>
-            <span class="badge bg-warning text-dark">Pendiente</span>
-          `;
-          unplacedList.appendChild(div);
-        });
-      } else {
-        unplacedList.innerHTML = '<span class="text-muted small">Todos los equipos están ubicados en el plano.</span>';
-      }
+      updateSidebarUI(unplaced);
 
-      // Process LLDP/Description Links
+      // Process LLDP Auto Links
       backendLinks.forEach((link, idx) => {
         elements.push({
           group: 'edges',
@@ -223,8 +228,8 @@
             selector: 'node',
             style: {
               'shape': 'rectangle',
-              'width': '80px',
-              'height': '32px',
+              'width': '84px',
+              'height': '34px',
               'background-image': switchSvg,
               'background-fit': 'contain',
               'background-color': 'transparent',
@@ -232,8 +237,8 @@
               'text-valign': 'bottom',
               'text-margin-y': 6,
               'font-size': '11px',
-              'font-weight': 'bold',
-              'color': '#1e293b',
+              'font-weight': '600',
+              'color': '#16191f',
               'font-family': 'system-ui, -apple-system, sans-serif'
             }
           },
@@ -241,7 +246,7 @@
             selector: 'node[isUnplaced]',
             style: {
               'border-width': '2px',
-              'border-color': '#f59e0b',
+              'border-color': '#eb7f00',
               'border-style': 'dashed'
             }
           },
@@ -250,39 +255,39 @@
             style: {
               'curve-style': 'taxi', // Manhattan style orthogonal routing
               'taxi-direction': 'auto',
-              'taxi-turn': '30px',
-              'width': 3,
+              'taxi-turn': '40px',
+              'width': 2.5,
               'line-color': '#cbd5e1',
               'label': 'data(label)',
               'font-size': '9px',
-              'font-family': 'monospace',
+              'font-family': 'Consolas, Monaco, monospace',
               'text-background-opacity': 1,
               'text-background-color': '#ffffff',
               'text-background-shape': 'roundrectangle',
               'text-background-padding': '3px',
-              'color': '#475569',
+              'color': '#545b64',
               'target-arrow-shape': 'none'
             }
           },
           {
             selector: 'edge[isManual]',
             style: {
-              'line-color': '#0ea5e9', // Light blue for manual links
+              'line-color': '#41AFF9', // Accent Blue for manual connections
               'line-style': 'dashed'
             }
           },
           {
             selector: 'node:selected',
             style: {
-              'background-color': 'rgba(15, 118, 110, 0.1)',
+              'background-color': 'rgba(0, 96, 168, 0.12)',
               'border-width': '2px',
-              'border-color': '#0f766e',
+              'border-color': '#0060A8',
               'border-style': 'solid'
             }
           }
         ],
         layout: {
-          name: 'preset' // Uses position coordinates passed explicitly
+          name: 'preset'
         },
         userZoomingEnabled: true,
         userPanningEnabled: true,
@@ -296,11 +301,11 @@
         if (isLinkMode) {
           if (!linkSourceNode) {
             linkSourceNode = node;
-            statusText.innerText = `Origen: ${node.data('label')}. Selecciona el switch de destino...`;
+            statusText.innerHTML = `⚙️ Origen: <strong>${node.data('label')}</strong>. Selecciona el switch de destino...`;
             node.select();
           } else {
             if (linkSourceNode.id() === node.id()) {
-              statusText.innerText = "No puedes enlazar un equipo consigo mismo. Selecciona otro switch.";
+              statusText.innerHTML = "⚠️ No puedes enlazar un equipo consigo mismo.";
               return;
             }
             
@@ -318,7 +323,6 @@
               const srcPort = document.getElementById("port-src").value.trim();
               const tgtPort = document.getElementById("port-tgt").value.trim();
               
-              // Add edge visually
               const edgeId = `edge-manual-new-${Date.now()}`;
               const label = (srcPort && tgtPort) ? `${srcPort} <-> ${tgtPort} (M)` : (srcPort ? `${srcPort} -> ? (M)` : `? <- ${tgtPort} (M)`);
               cy.add({
@@ -332,7 +336,6 @@
                 }
               });
 
-              // Add to state array
               topologyState.manual_links.push({
                 source: linkSourceNode.id(),
                 target: node.id(),
@@ -340,18 +343,15 @@
                 target_port: tgtPort || null
               });
 
-              // Reset link mode
               toggleLinkMode(false);
               modal.hide();
               
-              // Reset modal inputs
               document.getElementById("port-src").value = "";
               document.getElementById("port-tgt").value = "";
             };
           }
         } else {
-          // Double tap or long click to navigate
-          statusText.innerHTML = `Switch seleccionado: <strong>${node.data('label')}</strong> (${node.data('ip')}) · Modelo: ${node.data('model') || '-'}`;
+          statusText.innerHTML = `Dispositivo: <strong>${node.data('label')}</strong> (${node.data('ip')}) · Modelo: ${node.data('model') || '-'}`;
         }
       });
 
@@ -359,7 +359,7 @@
       cy.on('tap', function (evt) {
         if (evt.target === cy) {
           if (isLinkMode) {
-            statusText.innerText = "Selecciona el switch de origen para el enlace...";
+            statusText.innerText = "Modo Enlace: Selecciona el switch de origen...";
             if (linkSourceNode) {
               linkSourceNode.unselect();
               linkSourceNode = null;
@@ -373,37 +373,41 @@
       // Drag node triggers position updates locally
       cy.on('dragfree', 'node', function (evt) {
         const node = evt.target;
-        // If it was unplaced, remove isUnplaced flag & border
         if (node.data('isUnplaced')) {
           node.removeData('isUnplaced');
-          node.style({
-            'border-width': '0px'
-          });
-          // Refresh sidebar listing
+          node.style({ 'border-width': '0px' });
           refreshSidebar();
         }
       });
     }
 
-    function refreshSidebar() {
-      const unplaced = cy.nodes().filter(node => node.style('border-width') === '2px');
+    function updateSidebarUI(unplaced) {
       if (unplaced.length > 0) {
         unplacedList.innerHTML = "";
         unplaced.forEach(node => {
           const div = document.createElement("div");
-          div.className = "p-2 border rounded bg-light small d-flex justify-content-between align-items-center";
+          div.className = "p-2 border rounded bg-white shadow-sm small d-flex justify-content-between align-items-center";
           div.innerHTML = `
             <div>
-              <strong class="text-dark d-block">${node.data('label')}</strong>
-              <span class="text-secondary font-monospace" style="font-size: 0.75rem;">${node.data('ip')}</span>
+              <strong class="text-dark d-block">${node.label}</strong>
+              <span class="text-secondary font-monospace" style="font-size: 0.72rem;">${node.ip}</span>
             </div>
-            <span class="badge bg-warning text-dark">Pendiente</span>
+            <span class="badge bg-warning text-dark fs-7">Pendiente</span>
           `;
           unplacedList.appendChild(div);
         });
       } else {
-        unplacedList.innerHTML = '<span class="text-muted small">Todos los equipos están ubicados en el plano.</span>';
+        unplacedList.innerHTML = '<span class="text-muted small"><i class="bi bi-check-circle me-1 text-success"></i>Todos los equipos están ubicados en el plano.</span>';
       }
+    }
+
+    function refreshSidebar() {
+      const unplacedNodes = cy.nodes().filter(node => node.data('isUnplaced') === true);
+      const unplacedArray = unplacedNodes.map(node => ({
+        label: node.data('label'),
+        ip: node.data('ip')
+      }));
+      updateSidebarUI(unplacedArray);
     }
 
     // Toggle link drawing mode
@@ -411,13 +415,15 @@
       isLinkMode = active;
       linkSourceNode = null;
       if (active) {
-        btnModeLink.classList.replace("btn-outline-secondary", "btn-danger");
-        btnModeLink.innerText = "🔌 Enlace Manual: ON";
-        statusText.innerText = "Modo Edición: Selecciona el switch de origen...";
+        btnModeLink.classList.replace("btn-aws-secondary", "btn-danger");
+        btnModeLink.classList.add("text-white");
+        btnModeLink.innerHTML = "<i class='bi bi-node-plus-fill me-1'></i> Enlace Manual: ON";
+        statusText.innerText = "Modo Edición: Selecciona el switch de origen para el enlace...";
         cy.nodes().unselect();
       } else {
-        btnModeLink.classList.replace("btn-danger", "btn-outline-secondary");
-        btnModeLink.innerText = "🔌 Enlace Manual: OFF";
+        btnModeLink.classList.replace("btn-danger", "btn-aws-secondary");
+        btnModeLink.classList.remove("text-white");
+        btnModeLink.innerHTML = "<i class='bi bi-node-plus me-1'></i> Enlace Manual: OFF";
         statusText.innerText = "Usa Drag & Drop para ubicar los switches en el plano.";
         cy.nodes().unselect();
       }
@@ -433,7 +439,6 @@
       
       const positions = {};
       cy.nodes().forEach(node => {
-        // Only save position if the node has been placed/moved (not default border/isUnplaced)
         if (!node.data('isUnplaced')) {
           positions[node.id()] = {
             x: Math.round(node.position().x),
@@ -455,20 +460,20 @@
       .then(res => res.json())
       .then(res => {
         if (res.status === "success") {
-          statusText.innerHTML = "🟢 <strong>Mapa guardado con éxito.</strong>";
+          statusText.innerHTML = "🟢 <strong>Distribución del plano guardada con éxito.</strong>";
           setTimeout(() => {
             statusText.innerText = "Usa Drag & Drop para ubicar los switches en el plano.";
           }, 3000);
         } else {
-          statusText.innerHTML = "🔴 <strong>Error al guardar el mapa.</strong>";
+          statusText.innerHTML = "🔴 <strong>Error al guardar posiciones.</strong>";
         }
       })
       .catch(() => {
-        statusText.innerHTML = "🔴 <strong>Error de conexión al guardar el mapa.</strong>";
+        statusText.innerHTML = "🔴 <strong>Error de conexión con el backend.</strong>";
       })
       .finally(() => {
         btnSave.disabled = false;
-        btnSave.innerText = "💾 Guardar Mapa";
+        btnSave.innerHTML = "<i class='bi bi-floppy me-1'></i> Guardar Distribución";
       });
     };
 
@@ -482,7 +487,7 @@
         if (cleanedUrl) {
           floorplanContainer.style.backgroundImage = `url('${cleanedUrl}')`;
           btnClearBg.classList.remove("d-none");
-          statusText.innerHTML = "Imagen de fondo cargada. Ajusta los nodos sobre ella.";
+          statusText.innerHTML = "Imagen de plano cargada correctamente.";
         } else {
           floorplanContainer.style.backgroundImage = "";
           btnClearBg.classList.add("d-none");

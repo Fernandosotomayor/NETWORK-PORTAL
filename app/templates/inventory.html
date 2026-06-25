@@ -4,34 +4,113 @@
 
 {% block content %}
 <div class="mb-4">
-  <h1 class="h3 mb-1">Inventario</h1>
-  <p class="text-secondary mb-0">Switches cargados desde <code>normalized_json/</code>.</p>
+  <h1 class="h3 mb-1 fw-bold text-dark">Inventario de Switches</h1>
+  <p class="text-secondary mb-0">Base de datos de switches activos leída de <code>normalized_json/</code>.</p>
 </div>
 
-<section class="content-panel">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle table-sortable">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>IP</th>
-          <th>Modelo</th>
-          <th>Firmware</th>
-          <th>Ubicación</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for switch in switches %}
-        <tr>
-          <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=switch.slug) }}">{{ switch.hostname }}</a></td>
-          <td><a href="http://{{ switch.ip }}" target="_blank" class="text-decoration-none text-dark"><i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ switch.ip }}</a></td>
-          <td>{{ switch.model or '-' }}</td>
-          <td>{{ switch.firmware or '-' }}</td>
-          <td>{{ switch.location or '-' }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="aws-panel">
+  <div class="aws-panel-header flex-column flex-sm-row gap-2">
+    <div>
+      <h2 class="d-inline-block align-middle me-2">Dispositivos de Red</h2>
+      <span class="badge text-bg-light border fs-7">{{ switches | length }} recursos</span>
+    </div>
+    <div class="w-100 w-sm-auto">
+      <input type="text" id="inventoryFilter" class="form-control form-control-sm" placeholder="Filtrar por nombre, IP, modelo..." style="min-width: 250px;">
+    </div>
   </div>
-</section>
+  
+  <div class="aws-panel-body p-0">
+    <div class="table-aws-container">
+      <table class="table-aws table-sortable">
+        <thead>
+          <tr>
+            <th>Nombre del Host</th>
+            <th>Dirección IP</th>
+            <th>Modelo</th>
+            <th>Firmware</th>
+            <th>Ubicación</th>
+            <th>Estado de Conexión</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for switch in switches %}
+          <tr data-switch-ip="{{ switch.ip }}">
+            <td>
+              <a class="fw-semibold text-decoration-none" href="{{ url_for('switch_detail', slug=switch.slug) }}">
+                <i class="bi bi-hdd me-1 opacity-75"></i>{{ switch.hostname }}
+              </a>
+            </td>
+            <td>
+              <a href="http://{{ switch.ip }}" target="_blank" class="text-secondary text-decoration-none">
+                <i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ switch.ip }}
+              </a>
+            </td>
+            <td class="text-secondary">{{ switch.model or '-' }}</td>
+            <td class="text-secondary font-monospace fs-7">{{ switch.firmware or '-' }}</td>
+            <td class="text-secondary">{{ switch.location or '-' }}</td>
+            <td>
+              <div class="aws-status-indicator">
+                <span class="aws-status-dot unknown" id="status-dot-{{ switch.ip }}"></span>
+                <span class="fs-7 text-secondary" id="status-text-{{ switch.ip }}">Consultando...</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Dynamic connection status checker (Ping in background)
+    const statusRows = document.querySelectorAll("[data-switch-ip]");
+    statusRows.forEach(row => {
+      const ip = row.getAttribute("data-switch-ip");
+      const dot = document.getElementById(`status-dot-${ip}`);
+      const text = document.getElementById(`status-text-${ip}`);
+      
+      fetch(`/api/switches/${ip}/ping`, { 
+        method: "POST" 
+      })
+      .then(response => {
+        if (!response.ok) throw new Error("API error");
+        return response.json();
+      })
+      .then(data => {
+        if (data.online) {
+          dot.className = "aws-status-dot online";
+          text.innerText = "Online";
+          text.className = "fs-7 text-success fw-semibold";
+        } else {
+          dot.className = "aws-status-dot offline";
+          text.innerText = "Offline";
+          text.className = "fs-7 text-danger fw-semibold";
+        }
+      })
+      .catch(() => {
+        dot.className = "aws-status-dot offline";
+        text.innerText = "Offline (Error)";
+        text.className = "fs-7 text-danger fw-semibold";
+      });
+    });
+
+    // Real-time table filter logic
+    const filterInput = document.getElementById("inventoryFilter");
+    filterInput.addEventListener("input", (e) => {
+      const term = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll("tbody tr");
+      
+      rows.forEach(tr => {
+        const textContent = tr.textContent.toLowerCase();
+        if (textContent.includes(term)) {
+          tr.style.display = "";
+        } else {
+          tr.style.display = "none";
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

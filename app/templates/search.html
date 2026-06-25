@@ -4,125 +4,192 @@
 
 {% block content %}
 <div class="mb-4">
-  <h1 class="h3 mb-1">Búsqueda</h1>
-  <p class="text-secondary mb-0">Busca por VLAN, nombre de switch o descripción de puerto.</p>
+  <h1 class="h3 mb-1 fw-bold text-dark">Búsqueda Unificada</h1>
+  <p class="text-secondary mb-0">Busca switches por nombre o modelo, puertos por descripción, o filtra por VLAN específica.</p>
 </div>
 
+<!-- Search Input Form -->
 <form class="row g-2 mb-4" action="{{ url_for('search') }}" method="get">
-  <div class="col-12 col-lg-10">
-    <input class="form-control" name="q" value="{{ query }}" placeholder="Ej: 100, Cascadas, Trunk_SW">
+  <div class="col-12 col-md-10">
+    <div class="position-relative">
+      <input class="form-control form-control-lg ps-5" name="q" value="{{ query or '' }}" placeholder="Ingresa un término (ej: VLAN 100, Copiapó, Uplink, etc.)" style="border-radius: 6px; border: 1px solid var(--aws-border-dark);">
+      <i class="bi bi-search position-absolute text-muted" style="left: 1.25rem; top: 50%; transform: translateY(-50%); font-size: 1.2rem;"></i>
+    </div>
   </div>
-  <div class="col-12 col-lg-2 d-grid">
-    <button class="btn btn-dark" type="submit">Buscar</button>
+  <div class="col-12 col-md-2 d-grid">
+    <button class="btn btn-lg btn-aws-primary py-2" type="submit" style="border-radius: 6px;">Buscar</button>
   </div>
 </form>
 
 {% if not query %}
-  <div class="content-panel empty-state">Ingresa un criterio de búsqueda.</div>
+  <div class="text-center py-5 text-secondary border rounded-3 bg-white shadow-sm">
+    <i class="bi bi-search fs-1 opacity-25 d-block mb-2"></i>
+    <strong class="text-dark">Por favor, escribe un término de búsqueda arriba</strong>
+    <p class="text-secondary small mb-0 mt-1">Puedes buscar por ID de VLAN (ej. 10), nombre de switch (ej. SW-BODEGA) o descripción de puertos.</p>
+  </div>
 {% else %}
+  <!-- Search Results Sections -->
   <div class="row g-4">
+    <!-- 1. Switches Results -->
     <div class="col-12">
-      <section class="content-panel">
-        <div class="p-3 border-bottom">
-          <h2 class="h5 mb-0">Switches</h2>
+      <div class="aws-panel">
+        <div class="aws-panel-header">
+          <h2>Switches Coincidentes</h2>
+          {% if results.switches %}
+            <span class="badge bg-primary fs-7">{{ results.switches | length }} encontrados</span>
+          {% endif %}
         </div>
-        {% if results.switches %}
-        <div class="table-responsive">
-          <table class="table table-hover table-sortable">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>IP</th>
-                <th>Modelo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in results.switches %}
-              <tr>
-                <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">{{ item.switch.hostname }}</a></td>
-                <td><a href="http://{{ item.switch.ip }}" target="_blank" class="text-decoration-none text-dark"><i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ item.switch.ip }}</a></td>
-                <td>{{ item.switch.model or '-' }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        
+        <div class="aws-panel-body p-0">
+          {% if results.switches %}
+          <div class="table-aws-container">
+            <table class="table-aws table-sortable">
+              <thead>
+                <tr>
+                  <th>Nombre del Host</th>
+                  <th>Dirección IP</th>
+                  <th>Modelo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in results.switches %}
+                <tr>
+                  <td>
+                    <a class="fw-semibold text-decoration-none" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">
+                      <i class="bi bi-hdd me-1 opacity-75"></i>{{ item.switch.hostname }}
+                    </a>
+                  </td>
+                  <td>
+                    <a href="http://{{ item.switch.ip }}" target="_blank" class="text-secondary text-decoration-none">
+                      <i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ item.switch.ip }}
+                    </a>
+                  </td>
+                  <td class="text-secondary">{{ item.switch.model or '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-secondary">
+            <i class="bi bi-hdd fs-3 opacity-25 d-block mb-1"></i>
+            <span class="fs-7">No se encontraron switches con ese nombre o modelo.</span>
+          </div>
+          {% endif %}
         </div>
-        {% else %}
-        <div class="empty-state">Sin switches coincidentes.</div>
-        {% endif %}
-      </section>
+      </div>
     </div>
 
+    <!-- 2. Ports Results -->
     <div class="col-12">
-      <section class="content-panel">
-        <div class="p-3 border-bottom">
-          <h2 class="h5 mb-0">Puertos</h2>
+      <div class="aws-panel">
+        <div class="aws-panel-header">
+          <h2>Puertos / Interfaces Coincidentes</h2>
+          {% if results.ports %}
+            <span class="badge bg-primary fs-7">{{ results.ports | length }} encontrados</span>
+          {% endif %}
         </div>
-        {% if results.ports %}
-        <div class="table-responsive">
-          <table class="table table-hover align-middle table-sortable">
-            <thead>
-              <tr>
-                <th>Switch</th>
-                <th>Puerto</th>
-                <th>Modo</th>
-                <th>Access</th>
-                <th>Nativa</th>
-                <th>Permitidas</th>
-                <th>Descripción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in results.ports %}
-              <tr>
-                <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">{{ item.switch.hostname }}</a></td>
-                <td>{{ item.port.name }}</td>
-                <td>{{ item.port.mode }}</td>
-                <td>{{ item.port.access_vlan or '-' }}</td>
-                <td>{{ item.port.native_vlan or '-' }}</td>
-                <td class="vlan-list">{{ item.port.allowed_vlans | default([]) | vlans }}</td>
-                <td>{{ item.port.description or '-' }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        
+        <div class="aws-panel-body p-0">
+          {% if results.ports %}
+          <div class="table-aws-container">
+            <table class="table-aws table-sortable">
+              <thead>
+                <tr>
+                  <th>Switch</th>
+                  <th>Puerto</th>
+                  <th>Modo</th>
+                  <th class="text-center">VLAN Acceso</th>
+                  <th class="text-center">VLAN Nativa</th>
+                  <th>VLANs Permitidas</th>
+                  <th>Descripción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in results.ports %}
+                <tr>
+                  <td>
+                    <a class="fw-semibold text-decoration-none" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">
+                      <i class="bi bi-hdd me-1 opacity-75"></i>{{ item.switch.hostname }}
+                    </a>
+                  </td>
+                  <td class="fw-bold">{{ item.port.name }}</td>
+                  <td>
+                    <span class="aws-badge-pill {% if item.port.mode == 'trunk' %}trunk{% elif item.port.mode == 'access' %}access{% elif item.port.mode == 'hybrid' %}hybrid{% else %}other{% endif %}">
+                      {{ item.port.mode }}
+                    </span>
+                  </td>
+                  <td class="text-center fw-semibold text-secondary">{{ item.port.access_vlan or '-' }}</td>
+                  <td class="text-center fw-semibold text-secondary">{{ item.port.native_vlan or '-' }}</td>
+                  <td class="font-monospace text-secondary fs-7">{{ item.port.allowed_vlans | default([]) | vlans }}</td>
+                  <td class="text-secondary small">{{ item.port.description or '-' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-secondary">
+            <i class="bi bi-terminal fs-3 opacity-25 d-block mb-1"></i>
+            <span class="fs-7">No se encontraron puertos con descripciones o configuraciones coincidentes.</span>
+          </div>
+          {% endif %}
         </div>
-        {% else %}
-        <div class="empty-state">Sin puertos coincidentes.</div>
-        {% endif %}
-      </section>
+      </div>
     </div>
 
+    <!-- 3. VLANs Results -->
     <div class="col-12">
-      <section class="content-panel">
-        <div class="p-3 border-bottom">
-          <h2 class="h5 mb-0">VLANs</h2>
+      <div class="aws-panel">
+        <div class="aws-panel-header">
+          <h2>VLANs Coincidentes</h2>
+          {% if results.vlans %}
+            <span class="badge bg-primary fs-7">{{ results.vlans | length }} encontradas</span>
+          {% endif %}
         </div>
-        {% if results.vlans %}
-        <div class="table-responsive">
-          <table class="table table-hover table-sortable">
-            <thead>
-              <tr>
-                <th>VLAN</th>
-                <th>Switch</th>
-                <th>IP</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in results.vlans %}
-              <tr>
-                <td><span class="badge text-bg-light border">{{ item.vlan }}</span></td>
-                <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">{{ item.switch.hostname }}</a></td>
-                <td><a href="http://{{ item.switch.ip }}" target="_blank" class="text-decoration-none text-dark"><i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ item.switch.ip }}</a></td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        
+        <div class="aws-panel-body p-0">
+          {% if results.vlans %}
+          <div class="table-aws-container">
+            <table class="table-aws table-sortable">
+              <thead>
+                <tr>
+                  <th>VLAN</th>
+                  <th>Switch Asociado</th>
+                  <th>Dirección IP Switch</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in results.vlans %}
+                <tr>
+                  <td>
+                    <span class="btn btn-sm btn-outline-secondary font-monospace fs-7 fw-bold py-0" disabled>
+                      VLAN {{ item.vlan }}
+                    </span>
+                  </td>
+                  <td>
+                    <a class="fw-semibold text-decoration-none" href="{{ url_for('switch_detail', slug=item.switch.slug) }}">
+                      <i class="bi bi-hdd me-1 opacity-75"></i>{{ item.switch.hostname }}
+                    </a>
+                  </td>
+                  <td>
+                    <a href="http://{{ item.switch.ip }}" target="_blank" class="text-secondary text-decoration-none">
+                      <i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ item.switch.ip }}
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-secondary">
+            <i class="bi bi-tag fs-3 opacity-25 d-block mb-1"></i>
+            <span class="fs-7">No se encontraron switches configurados con ese ID de VLAN.</span>
+          </div>
+          {% endif %}
         </div>
-        {% else %}
-        <div class="empty-state">Sin VLANs coincidentes.</div>
-        {% endif %}
-      </section>
+      </div>
     </div>
   </div>
 {% endif %}

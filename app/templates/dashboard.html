@@ -3,63 +3,101 @@
 {% block title %}Dashboard | STLi Network Portal{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+<!-- Page Title and Quick Actions -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
   <div>
-    <h1 class="h3 mb-1">Dashboard</h1>
-    <p class="text-secondary mb-0">Inventario generado desde los JSON normalizados del parser.</p>
+    <h1 class="h3 mb-1 fw-bold text-dark">Consola de Administración de Red</h1>
+    <p class="text-secondary mb-0">Consola centralizada para el inventario de switches y VLANs de STLi.</p>
   </div>
-  <a class="btn btn-dark align-self-lg-start" href="{{ url_for('inventory') }}">Ver inventario</a>
+  <div>
+    <a class="btn-aws-primary text-decoration-none" href="{{ url_for('inventory') }}">
+      <i class="bi bi-hdd-network me-1"></i> Ver Inventario Completo
+    </a>
+  </div>
 </div>
 
+<!-- Metrics Cards Row -->
 <div class="row g-3 mb-4">
   <div class="col-12 col-md-4">
-    <div class="metric-card">
-      <div class="metric-label">Switches</div>
-      <div class="metric-value">{{ stats.switches }}</div>
+    <div class="aws-metric-card">
+      <div class="aws-metric-label">Switches en Red</div>
+      <div class="aws-metric-value">{{ stats.switches }}</div>
     </div>
   </div>
   <div class="col-12 col-md-4">
-    <div class="metric-card">
-      <div class="metric-label">VLANs únicas</div>
-      <div class="metric-value">{{ stats.unique_vlans }}</div>
+    <div class="aws-metric-card">
+      <div class="aws-metric-label">VLANs Únicas Parseadas</div>
+      <div class="aws-metric-value">{{ stats.unique_vlans }}</div>
     </div>
   </div>
   <div class="col-12 col-md-4">
-    <div class="metric-card">
-      <div class="metric-label">Puertos</div>
-      <div class="metric-value">{{ stats.ports }}</div>
+    <div class="aws-metric-card">
+      <div class="aws-metric-label">Puertos Administrados</div>
+      <div class="aws-metric-value">{{ stats.ports }}</div>
     </div>
   </div>
 </div>
 
-<section class="content-panel">
-  <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
-    <h2 class="h5 mb-0">Switches recientes</h2>
-    <span class="badge text-bg-secondary">{{ warnings_count }} advertencias</span>
+<!-- Recent Switches Section -->
+<div class="aws-panel">
+  <div class="aws-panel-header">
+    <h2>Resumen de Switches Recientes</h2>
+    {% if warnings_count > 0 %}
+    <span class="badge rounded-pill text-bg-warning fs-7 fw-bold px-3 py-1">
+      <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ warnings_count }} advertencias
+    </span>
+    {% else %}
+    <span class="badge rounded-pill text-bg-success fs-7 fw-bold px-3 py-1">
+      <i class="bi bi-check-circle-fill me-1"></i>Configuración limpia
+    </span>
+    {% endif %}
   </div>
-  <div class="table-responsive">
-    <table class="table table-hover align-middle table-sortable">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>IP</th>
-          <th>Modelo</th>
-          <th>VLANs</th>
-          <th>Puertos</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for switch in switches %}
-        <tr>
-          <td><a class="fw-semibold" href="{{ url_for('switch_detail', slug=switch.slug) }}">{{ switch.hostname }}</a></td>
-          <td><a href="http://{{ switch.ip }}" target="_blank" class="text-decoration-none text-dark"><i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ switch.ip }}</a></td>
-          <td>{{ switch.model or '-' }}</td>
-          <td>{{ switch.vlans | length }}</td>
-          <td>{{ switch.ports | length }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  
+  <div class="aws-panel-body p-0">
+    <div class="table-aws-container">
+      <table class="table-aws table-sortable">
+        <thead>
+          <tr>
+            <th>Nombre del Host</th>
+            <th>Dirección IP</th>
+            <th>Modelo</th>
+            <th class="text-center">VLANs</th>
+            <th class="text-center">Puertos</th>
+            <th>Alertas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for switch in switches %}
+          <tr>
+            <td>
+              <a class="fw-semibold text-decoration-none" href="{{ url_for('switch_detail', slug=switch.slug) }}">
+                <i class="bi bi-hdd me-1 opacity-75"></i>{{ switch.hostname }}
+              </a>
+            </td>
+            <td>
+              <a href="http://{{ switch.ip }}" target="_blank" class="text-secondary text-decoration-none">
+                <i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ switch.ip }}
+              </a>
+            </td>
+            <td class="text-secondary">{{ switch.model or '-' }}</td>
+            <td class="text-center fw-bold">{{ switch.vlans | length }}</td>
+            <td class="text-center fw-bold">{{ switch.ports | length }}</td>
+            <td>
+              {% if switch.warnings | length > 0 %}
+                <span class="text-warning fw-semibold fs-7">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ switch.warnings | length }} warnings
+                </span>
+              {% else %}
+                <span class="text-success fw-semibold fs-7">
+                  <i class="bi bi-check-circle-fill me-1"></i>Sin alertas
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-</section>
+</div>
 {% endblock %}

@@ -3,161 +3,334 @@
 {% block title %}{{ switch.hostname }} | STLi Network Portal{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+<!-- Switch Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
   <div>
-    <h1 class="h3 mb-1">{{ switch.hostname }}</h1>
-    <p class="text-secondary mb-0">{{ switch.ip }} · {{ switch.model or 'Modelo no informado' }}</p>
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <h1 class="h3 mb-0 fw-bold text-dark">{{ switch.hostname }}</h1>
+      <div class="aws-status-indicator ms-md-3">
+        <span class="aws-status-dot unknown" id="switch-header-dot"></span>
+        <span class="fs-7 text-secondary fw-semibold" id="switch-header-text">Consultando estado...</span>
+      </div>
+    </div>
+    <p class="text-secondary mb-0">{{ switch.ip }} · {{ switch.model or 'Modelo no especificado' }}</p>
   </div>
-  <a class="btn btn-outline-dark align-self-lg-start" href="{{ url_for('inventory') }}">Volver</a>
+  <div>
+    <a class="btn-aws-secondary text-decoration-none" href="{{ url_for('inventory') }}">
+      <i class="bi bi-arrow-left me-1"></i> Volver al Inventario
+    </a>
+  </div>
 </div>
 
-<section class="content-panel mb-4">
-  <div class="p-3 border-bottom">
-    <h2 class="h5 mb-0">Información general</h2>
+<!-- Warnings Notification Panel -->
+{% if switch.warnings %}
+<div class="alert alert-warning border-0 shadow-sm d-flex gap-3 align-items-start mb-4" role="alert">
+  <i class="bi bi-exclamation-triangle-fill fs-5 text-warning"></i>
+  <div>
+    <h4 class="alert-heading h6 fw-bold mb-1">Se detectaron {{ switch.warnings | length }} advertencias en la configuración:</h4>
+    <ul class="mb-0 ps-3 fs-7">
+      {% for warning in switch.warnings %}
+      <li>{{ warning }}</li>
+      {% endfor %}
+    </ul>
   </div>
-  <div class="row g-0">
-    <div class="col-12 col-md-6 col-xl-3 p-3 border-end">
-      <div class="text-secondary small">IP</div>
-      <div class="fw-semibold"><a href="http://{{ switch.ip }}" target="_blank" class="text-decoration-none text-dark"><i class="bi bi-box-arrow-up-right me-1 small opacity-50"></i>{{ switch.ip }}</a></div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3 p-3 border-end">
-      <div class="text-secondary small">Modelo</div>
-      <div class="fw-semibold">{{ switch.model or '-' }}</div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3 p-3 border-end">
-      <div class="text-secondary small">Firmware</div>
-      <div class="fw-semibold">{{ switch.firmware or '-' }}</div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3 p-3">
-      <div class="text-secondary small">Ubicación</div>
-      <div class="fw-semibold">{{ switch.location or '-' }}</div>
-    </div>
-  </div>
-  {% if switch.warnings %}
-  <div class="p-3 border-top">
-    <div class="alert alert-warning mb-0">
-      <strong>{{ switch.warnings | length }} advertencias:</strong>
-      {{ switch.warnings[:3] | join(' · ') }}{% if switch.warnings | length > 3 %} · ...{% endif %}
-    </div>
-  </div>
-  {% endif %}
-</section>
+</div>
+{% endif %}
 
-<section class="content-panel mb-4">
-  <div class="p-3 border-bottom">
-    <h2 class="h5 mb-0">Herramientas de Diagnóstico</h2>
-  </div>
-  <div class="p-3">
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <a class="btn btn-dark" href="#" onclick="handleSSHClick(event, '{{ switch.ip }}')">
-        <i class="bi bi-terminal me-1"></i> Conexión SSH
-      </a>
-      <a class="btn btn-outline-dark" href="http://{{ switch.ip }}" target="_blank">
-        <i class="bi bi-browser-chrome me-1"></i> Consola Web
-      </a>
-      <button class="btn btn-outline-primary" id="btn-ping" onclick="runPing('{{ switch.ip }}')">
-        <i class="bi bi-broadcast me-1" id="icon-ping"></i> Probar Conexión (Ping)
-      </button>
-      <span id="ping-status" class="ms-2 fw-semibold"></span>
+<!-- AWS Console Style Tabs Navigation -->
+<div class="aws-tabs" id="switchTabs">
+  <button class="aws-tab-btn active" data-tab="tab-general">Datos Generales</button>
+  <button class="aws-tab-btn" data-tab="tab-ports">Puertos ({{ switch.ports | length }})</button>
+  <button class="aws-tab-btn" data-tab="tab-vlans">VLANs ({{ switch.vlans | length }})</button>
+  <button class="aws-tab-btn" data-tab="tab-history">Historial de Revisiones ({{ history | length }})</button>
+  <button class="aws-tab-btn" data-tab="tab-diagnostics">Herramientas de Diagnóstico</button>
+</div>
+
+<!-- Tab Contents -->
+
+<!-- 1. General Tab -->
+<div class="aws-tab-content active" id="tab-general">
+  <div class="aws-panel">
+    <div class="aws-panel-header">
+      <h2>Información General del Dispositivo</h2>
     </div>
-    
-    <div id="ping-output-container" class="mt-3 d-none">
-      <div class="card bg-light border-0">
-        <div class="card-body p-3">
-          <pre id="ping-output" class="mb-0 font-monospace text-secondary small"></pre>
+    <div class="aws-panel-body">
+      <div class="aws-key-value-grid">
+        <div class="aws-kv-item">
+          <div class="aws-kv-label">Nombre del Host (Hostname)</div>
+          <div class="aws-kv-value">{{ switch.hostname }}</div>
+        </div>
+        <div class="aws-kv-item">
+          <div class="aws-kv-label">Dirección IP de Gestión</div>
+          <div class="aws-kv-value">
+            <a href="http://{{ switch.ip }}" target="_blank" class="text-decoration-none">
+              {{ switch.ip }} <i class="bi bi-box-arrow-up-right small ms-1 opacity-75"></i>
+            </a>
+          </div>
+        </div>
+        <div class="aws-kv-item">
+          <div class="aws-kv-label">Modelo de Hardware</div>
+          <div class="aws-kv-value">{{ switch.model or 'No detectado' }}</div>
+        </div>
+        <div class="aws-kv-item">
+          <div class="aws-kv-label">Versión de Firmware / OS</div>
+          <div class="aws-kv-value font-monospace text-secondary">{{ switch.firmware or 'No detectado' }}</div>
+        </div>
+        <div class="aws-kv-item">
+          <div class="aws-kv-label">Ubicación Física</div>
+          <div class="aws-kv-value">{{ switch.location or 'Sin asignar' }}</div>
+        </div>
+        <div class="aws-kv-item">
+          <div class="aws-kv-label">Archivo de Respaldo Origen</div>
+          <div class="aws-kv-value font-monospace fs-7 text-secondary">{{ switch.source_file or '-' }}</div>
         </div>
       </div>
     </div>
   </div>
-</section>
+</div>
 
-<section class="content-panel mb-4">
-  <div class="p-3 border-bottom d-flex justify-content-between">
-    <h2 class="h5 mb-0">Puertos</h2>
-    <span class="badge text-bg-secondary">{{ switch.ports | length }}</span>
+<!-- 2. Ports Tab -->
+<div class="aws-tab-content" id="tab-ports">
+  <div class="aws-panel">
+    <div class="aws-panel-header flex-column flex-sm-row gap-2">
+      <h2>Interfaces y Configuración de Puertos</h2>
+      <div class="w-100 w-sm-auto">
+        <input type="text" id="portFilter" class="form-control form-control-sm" placeholder="Filtrar por puerto, modo, VLAN o desc..." style="min-width: 250px;">
+      </div>
+    </div>
+    <div class="aws-panel-body p-0">
+      <div class="table-aws-container">
+        <table class="table-aws table-sortable" id="portsTable">
+          <thead>
+            <tr>
+              <th>Puerto / Interfaz</th>
+              <th>Modo</th>
+              <th class="text-center">VLAN Acceso</th>
+              <th class="text-center">VLAN Nativa</th>
+              <th>VLANs Permitidas (Trunk Allowed)</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for port in switch.ports %}
+            <tr>
+              <td class="fw-bold">{{ port.name }}</td>
+              <td>
+                <span class="aws-badge-pill {% if port.mode == 'trunk' %}trunk{% elif port.mode == 'access' %}access{% elif port.mode == 'hybrid' %}hybrid{% else %}other{% endif %}">
+                  {{ port.mode }}
+                </span>
+              </td>
+              <td class="text-center fw-semibold text-secondary">{{ port.access_vlan or '-' }}</td>
+              <td class="text-center fw-semibold text-secondary">{{ port.native_vlan or '-' }}</td>
+              <td class="font-monospace text-secondary fs-7" style="max-width: 320px; overflow-wrap: break-word;">
+                {{ port.allowed_vlans | default([]) | vlans }}
+              </td>
+              <td class="text-secondary" style="font-size: 0.8rem;">{{ port.description or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
-  <div class="table-responsive">
-    <table class="table table-hover align-middle table-sortable">
-      <thead>
-        <tr>
-          <th>Puerto</th>
-          <th>Modo</th>
-          <th>Access VLAN</th>
-          <th>Nativa</th>
-          <th>Permitidas</th>
-          <th>Descripción</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for port in switch.ports %}
-        <tr>
-          <td class="fw-semibold">{{ port.name }}</td>
-          <td><span class="badge badge-mode text-bg-{% if port.mode == 'trunk' %}primary{% elif port.mode == 'access' %}success{% elif port.mode == 'hybrid' %}warning{% else %}secondary{% endif %}">{{ port.mode }}</span></td>
-          <td>{{ port.access_vlan or '-' }}</td>
-          <td>{{ port.native_vlan or '-' }}</td>
-          <td class="vlan-list">{{ port.allowed_vlans | default([]) | vlans }}</td>
-          <td class="port-description">{{ port.description or '-' }}</td>
-        </tr>
+</div>
+
+<!-- 3. VLANs Tab -->
+<div class="aws-tab-content" id="tab-vlans">
+  <div class="aws-panel">
+    <div class="aws-panel-header">
+      <h2>VLANs Configuradas</h2>
+    </div>
+    <div class="aws-panel-body">
+      <p class="text-secondary small mb-3">Las siguientes VLANs están asociadas a este switch. Haz clic en cualquiera de ellas para ver otros switches que la utilicen.</p>
+      <div class="d-flex flex-wrap gap-2">
+        {% for vlan in switch.vlans %}
+          <a class="btn btn-sm btn-outline-secondary font-monospace fs-7 fw-bold" href="{{ url_for('search') }}?q={{ vlan }}">
+            <i class="bi bi-tag-fill text-muted me-1"></i>VLAN {{ vlan }}
+          </a>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </div>
   </div>
-</section>
+</div>
 
-<section class="content-panel">
-  <div class="p-3 border-bottom d-flex justify-content-between">
-    <h2 class="h5 mb-0">VLANs</h2>
-    <span class="badge text-bg-secondary">{{ switch.vlans | length }}</span>
+<!-- 4. Revision History (Git) Tab -->
+<div class="aws-tab-content" id="tab-history">
+  <div class="aws-panel">
+    <div class="aws-panel-header">
+      <h2>Historial de Respaldos y Cambios en Git</h2>
+    </div>
+    <div class="aws-panel-body p-0">
+      <div class="table-aws-container">
+        <table class="table-aws table-sortable">
+          <thead>
+            <tr>
+              <th>Fecha y Hora</th>
+              <th>Autor</th>
+              <th>Mensaje / Cambio Detectado</th>
+              <th class="text-end no-sort">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if not history %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-secondary">
+                <i class="bi bi-info-circle me-1"></i>No se ha detectado historial de revisiones para este switch.
+              </td>
+            </tr>
+            {% else %}
+              {% for change in history %}
+              <tr>
+                <td class="text-secondary font-monospace fs-7">{{ change.date | truncate(19, True, '') }}</td>
+                <td>{{ change.author }}</td>
+                <td><code class="text-dark">{{ change.message }}</code></td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-aws-secondary font-monospace py-1 px-2 text-decoration-none" href="{{ url_for('switch_diff', commit_hash=change.commit_hash) }}?filename={{ change.filename }}">
+                    <i class="bi bi-file-earmark-diff me-1"></i>Ver Diff
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
-  <div class="p-3">
-    {% for vlan in switch.vlans %}
-      <a class="badge rounded-pill text-bg-light border text-decoration-none me-1 mb-2" href="{{ url_for('search') }}?q={{ vlan }}">{{ vlan }}</a>
-    {% endfor %}
-  </div>
-</section>
+</div>
 
-<section class="content-panel mt-4">
-  <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
-    <h2 class="h5 mb-0">Historial de Revisiones (Git)</h2>
-    <span class="badge bg-dark">{{ history | length }} cambios</span>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-hover align-middle table-sortable">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Autor</th>
-          <th>Mensaje de Confirmación</th>
-          <th class="text-end no-sort">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if not history %}
-        <tr>
-          <td colspan="4" class="text-center py-4 text-secondary fs-7">
-            No se encontró historial de cambios en Git para este switch.
-          </td>
-        </tr>
-        {% else %}
-          {% for change in history %}
-          <tr>
-            <td class="text-secondary font-monospace fs-7">{{ change.date | truncate(19, True, '') }}</td>
-            <td>{{ change.author }}</td>
-            <td><code class="text-dark">{{ change.message }}</code></td>
-            <td class="text-end">
-              <a class="btn btn-sm btn-outline-dark font-monospace" href="{{ url_for('switch_diff', commit_hash=change.commit_hash) }}?filename={{ change.filename }}">
-                ver diff
+<!-- 5. Diagnostics Tab -->
+<div class="aws-tab-content" id="tab-diagnostics">
+  <div class="row g-3">
+    <!-- Tools -->
+    <div class="col-12 col-lg-5">
+      <div class="aws-panel h-100">
+        <div class="aws-panel-header">
+          <h2>Herramientas de Diagnóstico</h2>
+        </div>
+        <div class="aws-panel-body">
+          <p class="text-secondary small mb-4">Ejecuta diagnósticos rápidos y establece conexiones directamente con el switch.</p>
+          
+          <div class="d-grid gap-3">
+            <!-- SSH Connection Card -->
+            <div class="p-3 border rounded">
+              <h3 class="h6 fw-bold mb-2"><i class="bi bi-terminal me-2 text-primary"></i>Conexión SSH</h3>
+              <p class="text-secondary fs-7 mb-3">Abre la consola terminal WebSSH2 o copia el comando SSH en tu portapapeles.</p>
+              <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-sm btn-aws-primary" onclick="handleSSHClick(event, '{{ switch.ip }}')">
+                  <i class="bi bi-terminal me-1"></i> Abrir Consola WebSSH2
+                </button>
+              </div>
+            </div>
+
+            <!-- Ping Test Card -->
+            <div class="p-3 border rounded">
+              <h3 class="h6 fw-bold mb-2"><i class="bi bi-broadcast me-2 text-success"></i>Prueba de Conexión (Ping)</h3>
+              <p class="text-secondary fs-7 mb-3">Envía un ping en tiempo real desde el servidor para comprobar el estado de respuesta.</p>
+              <button class="btn btn-sm btn-aws-primary" id="btn-ping" onclick="runPing('{{ switch.ip }}')">
+                <i class="bi bi-broadcast me-1" id="icon-ping"></i> Ejecutar Prueba de Ping
+              </button>
+            </div>
+
+            <!-- Web Console Card -->
+            <div class="p-3 border rounded">
+              <h3 class="h6 fw-bold mb-2"><i class="bi bi-browser-chrome me-2 text-info"></i>Consola de Gestión Web</h3>
+              <p class="text-secondary fs-7 mb-3">Accede directamente al servidor web HTTP/HTTPS del switch.</p>
+              <a class="btn btn-sm btn-aws-secondary text-decoration-none d-inline-block" href="http://{{ switch.ip }}" target="_blank">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Abrir Consola Web
               </a>
-            </td>
-          </tr>
-          {% endfor %}
-        {% endif %}
-      </tbody>
-    </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output Logs -->
+    <div class="col-12 col-lg-7">
+      <div class="aws-panel h-100">
+        <div class="aws-panel-header">
+          <h2>Resultados del Diagnóstico</h2>
+          <span id="ping-status" class="badge bg-secondary fs-7 px-2 py-1">Listo</span>
+        </div>
+        <div class="aws-panel-body">
+          <p class="text-secondary small mb-2">Aquí se mostrarán las salidas de los diagnósticos ejecutados.</p>
+          <div id="ping-output-container" class="d-none">
+            <pre id="ping-output" class="aws-console-pre mb-0"></pre>
+          </div>
+          <div id="diagnostics-placeholder" class="text-center py-5 text-secondary border rounded-3 bg-light">
+            <i class="bi bi-terminal fs-1 opacity-25 d-block mb-2"></i>
+            <span class="fs-7">Ninguna herramienta de diagnóstico ha sido ejecutada aún.</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-</section>
+</div>
 
 <script>
+  // Tab Switching Logic
+  document.addEventListener("DOMContentLoaded", () => {
+    const tabButtons = document.querySelectorAll(".aws-tab-btn");
+    const tabContents = document.querySelectorAll(".aws-tab-content");
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const targetTab = btn.getAttribute("data-tab");
+
+        // Remove active class from all buttons and contents
+        tabButtons.forEach(b => b.classList.remove("active"));
+        tabContents.forEach(c => c.classList.remove("active"));
+
+        // Add active class to selected button and content
+        btn.classList.add("active");
+        document.getElementById(targetTab).classList.add("active");
+      });
+    });
+
+    // Real-time Port table filtering logic
+    const portFilter = document.getElementById("portFilter");
+    if (portFilter) {
+      portFilter.addEventListener("input", (e) => {
+        const term = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll("#portsTable tbody tr");
+        
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(term) ? "" : "none";
+        });
+      });
+    }
+
+    // Load Header Status dot on start
+    checkHeaderStatus('{{ switch.ip }}');
+  });
+
+  // Check Switch Online Status on Header
+  function checkHeaderStatus(ip) {
+    const dot = document.getElementById("switch-header-dot");
+    const text = document.getElementById("switch-header-text");
+    
+    fetch(`/api/switches/${ip}/ping`, { method: "POST" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.online) {
+          dot.className = "aws-status-dot online";
+          text.innerText = "Online";
+          text.className = "fs-7 text-success fw-semibold ms-1";
+        } else {
+          dot.className = "aws-status-dot offline";
+          text.innerText = "Offline";
+          text.className = "fs-7 text-danger fw-semibold ms-1";
+        }
+      })
+      .catch(() => {
+        dot.className = "aws-status-dot offline";
+        text.innerText = "Offline";
+        text.className = "fs-7 text-danger fw-semibold ms-1";
+      });
+  }
+
+  // SSH Web Interface copy and trigger WebSSH2 tab
   function fallbackCopyTextToClipboard(text) {
     const textArea = document.createElement("textarea");
     textArea.value = text;
@@ -191,51 +364,48 @@
   function handleSSHClick(event, ip) {
     event.preventDefault();
     const command = `ssh sis_sw@${ip}`;
+    const status = document.getElementById("ping-status");
     
     copyTextToClipboard(command).then(success => {
-      const status = document.getElementById("ping-status");
-      if (success) {
-        status.className = "ms-2 text-primary font-monospace small";
-        status.innerHTML = `<i class="bi bi-clipboard-check-fill me-1"></i>¡Comando copiado! (<code>${command}</code>)`;
-      } else {
-        status.className = "ms-2 text-secondary font-monospace small";
-        status.innerHTML = `Comando: <code>${command}</code>`;
-      }
+      // Show output in results
+      document.getElementById("diagnostics-placeholder").classList.add("d-none");
+      const outputContainer = document.getElementById("ping-output-container");
+      const output = document.getElementById("ping-output");
+      outputContainer.classList.remove("d-none");
       
-      // Abrir la terminal WebSSH2 en una nueva pestaña usando el hostname dinámico
+      status.innerText = "SSH CLI Copiado";
+      status.className = "badge bg-primary fs-7 px-2 py-1";
+      
+      output.innerHTML = `<span class="text-success">[SSH CLI Command Copied]</span>\n\nCommand copied to clipboard:\n$ <strong>${command}</strong>\n\nAbriendo cliente terminal WebSSH2 integrado en una pestaña nueva...`;
+      
+      // Open WebSSH2 client in a new window
       const webSshUrl = `http://${window.location.hostname}/ssh/host/${ip}?user=sis_sw`;
       window.open(webSshUrl, "_blank");
-
-      // Limpiar el mensaje después de 8 segundos si no ha cambiado por un ping
-      setTimeout(() => {
-        if (status.innerHTML.includes("Comando") || status.innerHTML.includes("copiado")) {
-          status.innerHTML = "";
-        }
-      }, 8000);
     });
   }
 
+  // Run dynamic Ping
   function runPing(ip) {
     const btn = document.getElementById("btn-ping");
     const icon = document.getElementById("icon-ping");
     const status = document.getElementById("ping-status");
     const outputContainer = document.getElementById("ping-output-container");
     const output = document.getElementById("ping-output");
+    const placeholder = document.getElementById("diagnostics-placeholder");
 
     // Disable button and show spinner
     btn.disabled = true;
     icon.className = "spinner-border spinner-border-sm me-1";
-    status.className = "ms-2 text-muted";
-    status.innerText = "Realizando ping...";
+    status.innerText = "Pinging...";
+    status.className = "badge bg-warning text-dark fs-7 px-2 py-1";
+    placeholder.classList.add("d-none");
     outputContainer.classList.add("d-none");
 
     fetch(`/api/switches/${ip}/ping`, {
       method: "POST"
     })
     .then(response => {
-      if (!response.ok) {
-        throw new Error("HTTP error " + response.status);
-      }
+      if (!response.ok) throw new Error("HTTP error " + response.status);
       return response.json();
     })
     .then(data => {
@@ -243,11 +413,11 @@
       icon.className = "bi bi-broadcast me-1";
       
       if (data.online) {
-        status.className = "ms-2 text-success";
-        status.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Online';
+        status.className = "badge bg-success fs-7 px-2 py-1";
+        status.innerText = "Online";
       } else {
-        status.className = "ms-2 text-danger";
-        status.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i>Offline';
+        status.className = "badge bg-danger fs-7 px-2 py-1";
+        status.innerText = "Offline";
       }
       
       // Show ping output
@@ -257,8 +427,8 @@
     .catch(error => {
       btn.disabled = false;
       icon.className = "bi bi-broadcast me-1";
-      status.className = "ms-2 text-danger";
-      status.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Error';
+      status.className = "badge bg-danger fs-7 px-2 py-1";
+      status.innerText = "Error";
       outputContainer.classList.remove("d-none");
       output.innerText = "Error ejecutando la prueba: " + error.message;
     });

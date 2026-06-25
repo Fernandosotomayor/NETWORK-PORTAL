@@ -4,79 +4,113 @@
 
 {% block content %}
 <div class="mb-4">
-  <h1 class="h3 mb-1">Auditoría Automática</h1>
-  <p class="text-secondary mb-0">Análisis dinámico de consistencia lógica en configuraciones de switches.</p>
+  <h1 class="h3 mb-1 fw-bold text-dark">Auditoría Automática de Configuración</h1>
+  <p class="text-secondary mb-0">Análisis y cumplimiento de reglas en la configuración de switches (VLANs huérfanas, inconsistencias en trunks, descripciones vacías).</p>
 </div>
 
+<!-- Severity metrics cards -->
 <div class="row g-3 mb-4">
   <div class="col-12 col-md-6">
-    <div class="metric-card border-danger border-start border-4">
-      <div class="metric-label text-danger">Hallazgos Críticos</div>
-      <div class="metric-value text-danger">{{ report.critical_count }}</div>
+    <div class="aws-metric-card" style="border-top-color: var(--aws-danger);">
+      <div class="aws-metric-label text-danger">Hallazgos Críticos</div>
+      <div class="aws-metric-value text-danger">{{ report.critical_count }}</div>
     </div>
   </div>
   <div class="col-12 col-md-6">
-    <div class="metric-card border-warning border-start border-4">
-      <div class="metric-label text-warning">Advertencias</div>
-      <div class="metric-value text-warning">{{ report.warning_count }}</div>
+    <div class="aws-metric-card" style="border-top-color: var(--aws-warning);">
+      <div class="aws-metric-label text-warning">Advertencias</div>
+      <div class="aws-metric-value text-warning">{{ report.warning_count }}</div>
     </div>
   </div>
 </div>
 
-<section class="content-panel">
-  <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
-    <h2 class="h5 mb-0">Detalle de Hallazgos</h2>
-    <span class="badge bg-dark">{{ report.findings | length }} total</span>
+<!-- Findings Detail Panel -->
+<div class="aws-panel">
+  <div class="aws-panel-header flex-column flex-sm-row gap-2">
+    <div>
+      <h2>Listado de Hallazgos y Desviaciones</h2>
+      <span class="badge text-bg-light border fs-7 ms-2">{{ report.findings | length }} inconsistencias</span>
+    </div>
+    <div class="w-100 w-sm-auto">
+      <input type="text" id="auditFilter" class="form-control form-control-sm" placeholder="Filtrar por switch, puerto o mensaje..." style="min-width: 250px;">
+    </div>
   </div>
   
-  <div class="table-responsive">
-    <table class="table table-hover align-middle table-sortable">
-      <thead>
-        <tr>
-          <th>Switch</th>
-          <th>Puerto</th>
-          <th>Severidad</th>
-          <th>Descripción del Problema</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if not report.findings %}
-        <tr>
-          <td colspan="4" class="text-center py-5 text-secondary">
-            <div class="fs-4 mb-2">🎉</div>
-            <strong>¡Excelente! No se encontraron inconsistencias en las configuraciones.</strong>
-          </td>
-        </tr>
-        {% else %}
-          {% for finding in report.findings %}
+  <div class="aws-panel-body p-0">
+    <div class="table-aws-container">
+      <table class="table-aws table-sortable" id="auditTable">
+        <thead>
           <tr>
-            <td>
-              <a class="fw-semibold text-decoration-none" href="{{ url_for('switch_detail', slug=finding.switch_slug) }}">
-                {{ finding.switch_hostname }}
-              </a>
-            </td>
-            <td>
-              {% if finding.port_name %}
-                <span class="badge bg-secondary font-monospace">{{ finding.port_name }}</span>
-              {% else %}
-                <span class="text-muted">-</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if finding.severity == 'critical' %}
-                <span class="badge bg-danger">Crítico</span>
-              {% else %}
-                <span class="badge bg-warning text-dark">Advertencia</span>
-              {% endif %}
-            </td>
-            <td>
-              <span class="text-dark">{{ finding.message }}</span>
+            <th>Dispositivo (Switch)</th>
+            <th>Puerto / Interfaz</th>
+            <th>Nivel de Gravedad</th>
+            <th>Descripción del Hallazgo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if not report.findings %}
+          <tr>
+            <td colspan="4" class="text-center py-5 text-secondary">
+              <i class="bi bi-patch-check-fill text-success fs-1 d-block mb-2"></i>
+              <strong class="text-dark">¡Felicitaciones! No se detectaron inconsistencias en la red.</strong>
+              <p class="text-secondary small mb-0 mt-1">Todos los switches están alineados con las políticas de auditoría básicas.</p>
             </td>
           </tr>
-          {% endfor %}
-        {% endif %}
-      </tbody>
-    </table>
+          {% else %}
+            {% for finding in report.findings %}
+            <tr>
+              <td>
+                <a class="fw-semibold text-decoration-none" href="{{ url_for('switch_detail', slug=finding.switch_slug) }}">
+                  <i class="bi bi-hdd me-1 opacity-75"></i>{{ finding.switch_hostname }}
+                </a>
+              </td>
+              <td>
+                {% if finding.port_name %}
+                  <code class="bg-light px-2 py-1 border rounded text-dark font-monospace fs-7">{{ finding.port_name }}</code>
+                {% else %}
+                  <span class="text-muted small">- (Global)</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if finding.severity == 'critical' %}
+                  <span class="text-danger fw-bold fs-7">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Crítico
+                  </span>
+                {% else %}
+                  <span class="text-warning fw-bold fs-7">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>Advertencia
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="text-dark">{{ finding.message }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
   </div>
-</section>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const filterInput = document.getElementById("auditFilter");
+    if (filterInput) {
+      filterInput.addEventListener("input", (e) => {
+        const term = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll("#auditTable tbody tr");
+        
+        rows.forEach(row => {
+          // If it's the "No findings" row, skip
+          if (row.querySelector("td[colspan]")) return;
+          
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(term) ? "" : "none";
+        });
+      });
+    }
+  });
+</script>
 {% endblock %}

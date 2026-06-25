@@ -4,53 +4,59 @@
 
 {% block content %}
 <div class="mb-4">
-  <h1 class="h3 mb-1">Historial de Cambios</h1>
-  <p class="text-secondary mb-0">Línea de tiempo global de modificaciones detectadas en los archivos de configuración.</p>
+  <h1 class="h3 mb-1 fw-bold text-dark">Historial de Cambios</h1>
+  <p class="text-secondary mb-0">Línea de tiempo global de modificaciones detectadas en los archivos de configuración (Git).</p>
 </div>
 
-<section class="content-panel">
-  <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
-    <h2 class="h5 mb-0">Modificaciones en el Repositorio</h2>
-    <span class="badge bg-dark">{{ changes | length }} cambios</span>
+<div class="aws-panel">
+  <div class="aws-panel-header">
+    <h2>Registro de Cambios del Repositorio</h2>
+    <span class="badge text-bg-light border fs-7">{{ changes | length }} commits</span>
   </div>
   
-  <div class="table-responsive">
-    <table class="table table-hover align-middle table-sortable">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Archivo</th>
-          <th>Autor</th>
-          <th>Mensaje de Confirmación</th>
-          <th class="text-end no-sort">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if not changes %}
-        <tr>
-          <td colspan="5" class="text-center py-5 text-secondary">
-            <div class="fs-4 mb-2">📁</div>
-            <strong>No se encontró historial en el repositorio Git.</strong>
-            <p class="mb-0 text-muted fs-7">Asegúrate de que la carpeta <code>backups/</code> esté inicializada en Git y tenga commits.</p>
-          </td>
-        </tr>
-        {% else %}
-          {% for change in changes %}
-          <tr>
-            <td class="text-secondary font-monospace fs-7">{{ change.date | truncate(19, True, '') }}</td>
-            <td class="fw-semibold">{{ change.filename }}</td>
-            <td>{{ change.author }}</td>
-            <td><code class="text-dark">{{ change.message }}</code></td>
-            <td class="text-end">
-              <a class="btn btn-sm btn-outline-dark font-monospace" href="{{ url_for('switch_diff', commit_hash=change.commit_hash) }}?filename={{ change.filename }}">
-                diff
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        {% endif %}
-      </tbody>
-    </table>
+  <div class="aws-panel-body">
+    {% if not changes %}
+    <div class="text-center py-5 text-secondary border rounded-3 bg-light">
+      <i class="bi bi-clock-history fs-1 opacity-25 d-block mb-2"></i>
+      <strong class="text-dark">No se encontró historial en el repositorio Git.</strong>
+      <p class="text-secondary small mb-0 mt-1">Asegúrate de que la carpeta <code>backups/</code> esté inicializada en Git y tenga revisiones registradas.</p>
+    </div>
+    {% else %}
+    <div class="timeline-aws">
+      {% for change in changes %}
+      <div class="timeline-aws-item">
+        <div class="timeline-aws-date">
+          <i class="bi bi-calendar-event me-1"></i>{{ change.date | truncate(19, True, '') }}
+        </div>
+        <div class="timeline-aws-card">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+            <div>
+              <span class="fw-bold text-dark">
+                <i class="bi bi-file-earmark-code me-1 text-primary opacity-75"></i>{{ change.filename }}
+              </span>
+              <span class="badge bg-light border text-secondary font-monospace fs-7 ms-md-2" title="Commit Hash completo: {{ change.commit_hash }}">
+                {{ change.commit_hash | truncate(8, True, '') }}
+              </span>
+            </div>
+            <div class="text-secondary fs-7">
+              <i class="bi bi-person-fill me-1"></i>Autor: <strong>{{ change.author }}</strong>
+            </div>
+          </div>
+          
+          <div class="my-2 p-2 bg-light border-start border-3 border-secondary rounded-end font-monospace fs-7 text-dark">
+            {{ change.message }}
+          </div>
+          
+          <div class="text-end">
+            <a class="btn btn-sm btn-aws-secondary text-decoration-none py-1" href="{{ url_for('switch_diff', commit_hash=change.commit_hash) }}?filename={{ change.filename }}">
+              <i class="bi bi-file-earmark-diff me-1"></i>Ver Diferencias (Diff)
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
-</section>
+</div>
 {% endblock %}

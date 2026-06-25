@@ -4,51 +4,136 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}STLi Network Portal{% endblock %}</title>
+    <!-- Bootstrap CSS (just for grid layout utilities, we style our own controls) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom Style System -->
     <link href="{{ url_for('static', path='styles.css') }}" rel="stylesheet">
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container-fluid page-shell">
-        <a class="navbar-brand fw-semibold" href="{{ url_for('dashboard') }}">STLi Network Portal</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
+    <!-- Top Header Navigation -->
+    <header class="aws-header">
+      <div class="aws-header-brand">
+        <button class="sidebar-toggle-btn" id="sidebarToggle" type="button" aria-label="Toggle navigation">
+          <i class="bi bi-list"></i>
         </button>
-        <div class="collapse navbar-collapse" id="mainNav">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-              <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if active_page == 'inventory' %}active{% endif %}" href="{{ url_for('inventory') }}">Inventario</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if active_page == 'topology' %}active{% endif %}" href="{{ url_for('topology') }}">Topología</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if active_page == 'audit' %}active{% endif %}" href="{{ url_for('audit') }}">Auditoría</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if active_page == 'changes' %}active{% endif %}" href="{{ url_for('changes') }}">Cambios</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if active_page == 'search' %}active{% endif %}" href="{{ url_for('search') }}">Búsqueda</a>
-            </li>
-          </ul>
-          <form class="d-flex" role="search" action="{{ url_for('search') }}" method="get">
-            <input class="form-control form-control-sm me-2" type="search" name="q" value="{{ query | default('') }}" placeholder="VLAN, switch o puerto">
-            <button class="btn btn-sm btn-outline-light" type="submit">Buscar</button>
-          </form>
-        </div>
+        <a href="{{ url_for('dashboard') }}" class="d-flex align-items-center gap-2 text-decoration-none">
+          <img src="{{ url_for('static', path='logo.png') }}" alt="STLi Logo">
+          <span>Portal de Red</span>
+        </a>
       </div>
-    </nav>
 
-    <main class="container-fluid page-shell py-4">
-      {% block content %}{% endblock %}
-    </main>
+      <!-- Center Search Bar (AWS console style) -->
+      <form class="aws-header-search" action="{{ url_for('search') }}" method="get">
+        <input type="search" name="q" value="{{ query | default('') }}" placeholder="Buscar switches, VLANs, puertos..." aria-label="Search">
+        <i class="bi bi-search"></i>
+      </form>
 
+      <!-- Right User Menu/Info -->
+      <div class="aws-header-actions">
+        <span class="fs-7 d-none d-md-inline text-white-50"><i class="bi bi-shield-fill-check me-1 text-success"></i>Consola Segura</span>
+        <a href="{{ url_for('dashboard') }}" class="text-white text-decoration-none opacity-75 hover-opacity-100">
+          <i class="bi bi-person-circle fs-5"></i>
+        </a>
+      </div>
+    </header>
+
+    <div class="app-layout">
+      <!-- Left Sidebar Navigation -->
+      <nav class="aws-sidebar" id="awsSidebar">
+        <ul class="aws-sidebar-menu">
+          <li class="aws-sidebar-item {% if active_page == 'dashboard' %}active{% endif %}">
+            <a class="aws-sidebar-link" href="{{ url_for('dashboard') }}">
+              <i class="bi bi-speedometer2"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="aws-sidebar-item {% if active_page == 'inventory' %}active{% endif %}">
+            <a class="aws-sidebar-link" href="{{ url_for('inventory') }}">
+              <i class="bi bi-hdd-network"></i>
+              <span>Inventario</span>
+            </a>
+          </li>
+          <li class="aws-sidebar-item {% if active_page == 'topology' %}active{% endif %}">
+            <a class="aws-sidebar-link" href="{{ url_for('topology') }}">
+              <i class="bi bi-diagram-3"></i>
+              <span>Topología</span>
+            </a>
+          </li>
+          <li class="aws-sidebar-item {% if active_page == 'audit' %}active{% endif %}">
+            <a class="aws-sidebar-link" href="{{ url_for('audit') }}">
+              <i class="bi bi-shield-check"></i>
+              <span>Auditoría</span>
+            </a>
+          </li>
+          <li class="aws-sidebar-item {% if active_page == 'changes' %}active{% endif %}">
+            <a class="aws-sidebar-link" href="{{ url_for('changes') }}">
+              <i class="bi bi-clock-history"></i>
+              <span>Cambios</span>
+            </a>
+          </li>
+          <li class="aws-sidebar-item {% if active_page == 'search' %}active{% endif %}">
+            <a class="aws-sidebar-link" href="{{ url_for('search') }}">
+              <i class="bi bi-search"></i>
+              <span>Búsqueda</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Main Content Container -->
+      <main class="app-content">
+        <!-- Breadcrumbs -->
+        <nav class="aws-breadcrumbs" aria-label="breadcrumb">
+          <a href="{{ url_for('dashboard') }}">STLi Portal</a>
+          <span class="aws-breadcrumbs-separator">/</span>
+          {% if active_page == 'dashboard' %}
+            <span class="text-dark fw-semibold">Dashboard</span>
+          {% elif active_page == 'inventory' %}
+            <span class="text-dark fw-semibold">Inventario</span>
+          {% elif active_page == 'topology' %}
+            <span class="text-dark fw-semibold">Topología</span>
+          {% elif active_page == 'audit' %}
+            <span class="text-dark fw-semibold">Auditoría</span>
+          {% elif active_page == 'changes' %}
+            <span class="text-dark fw-semibold">Cambios</span>
+          {% elif active_page == 'search' %}
+            <span class="text-dark fw-semibold">Búsqueda</span>
+          {% endif %}
+        </nav>
+
+        <!-- Main Block Content -->
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper (just for minimal utilities) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Sidebar Toggle Script -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const toggleBtn = document.getElementById("sidebarToggle");
+        const sidebar = document.getElementById("awsSidebar");
+
+        if (toggleBtn && sidebar) {
+          toggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle("open");
+          });
+
+          // Close sidebar when clicking outside on mobile
+          document.addEventListener("click", (e) => {
+            if (sidebar.classList.contains("open") && !sidebar.contains(e.target) && e.target !== toggleBtn) {
+              sidebar.classList.remove("open");
+            }
+          });
+        }
+      });
+    </script>
+
+    <!-- Table Sorting Script (AWS design integrated) -->
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
@@ -69,7 +154,7 @@
             return 0;
           }
 
-          // Check if values are numeric (e.g. ports count, vlan IDs)
+          // Check if values are numeric
           const clean1 = v1.replace(/[^\d.-]/g, '');
           const clean2 = v2.replace(/[^\d.-]/g, '');
           const n1 = parseFloat(clean1);
@@ -78,7 +163,6 @@
             return asc ? n1 - n2 : n2 - n1;
           }
 
-          // Default string comparison
           return asc ? v1.toString().localeCompare(v2) : v2.toString().localeCompare(v1);
         })(getCellValue(a, idx), getCellValue(b, idx));
 
@@ -90,7 +174,7 @@
             th.style.cursor = "pointer";
             th.classList.add("pe-4", "position-relative");
 
-            // Add Bootstrap Icon sort-indicator
+            // Add Sort Indicator Icon
             const indicator = document.createElement("i");
             indicator.className = "bi bi-arrow-down-up ms-2 text-muted opacity-50 sort-indicator";
             indicator.style.fontSize = "0.75rem";
@@ -104,12 +188,9 @@
                 return !row.querySelector("td[colspan]");
               });
 
-              // Toggle direction based on current status
               const isAscending = th.getAttribute("data-sort") !== "asc";
-
               rows.sort(comparer(idx, isAscending));
 
-              // Reset all indicators and attributes in this table
               headers.forEach(h => {
                 h.removeAttribute("data-sort");
                 const ind = h.querySelector(".sort-indicator");
@@ -118,11 +199,9 @@
                 }
               });
 
-              // Set active indicator and attribute
               th.setAttribute("data-sort", isAscending ? "asc" : "desc");
               indicator.className = isAscending ? "bi bi-caret-up-fill ms-2 text-primary sort-indicator" : "bi bi-caret-down-fill ms-2 text-primary sort-indicator";
 
-              // Re-append rows
               rows.forEach(tr => tbody.appendChild(tr));
             });
           });
