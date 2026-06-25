@@ -71,6 +71,7 @@ class NetworkNode:
     ip: str
     model: str
     group: str = "switch"
+    hierarchy: str = "access"  # core, distribution, access
     firmware: str = ""
     location: str = ""
     uptime: str = ""
@@ -91,6 +92,7 @@ class NetworkLink:
     target_port: str | None
     label: str
     link_type: str = "auto"  # "auto" | "manual"
+    is_important: bool = False
 
 
 @dataclass(slots=True)
@@ -272,12 +274,25 @@ def generate_topology(switches: list[SwitchRecord]) -> TopologyData:
         if link.target in link_counts:
             link_counts[link.target] += 1
 
+    for link in links:
+        # Mark links as important if they connect to distribution or core switches
+        if link_counts.get(link.source, 0) >= 2 or link_counts.get(link.target, 0) >= 2:
+            link.is_important = True
+
     for switch in switches:
         port_count = len(switch.ports)
         trunk_count = sum(
             1 for p in switch.ports
             if any(term in str(p.get("description") or "").lower() for term in ["trunk", "uplink", "enlace"])
         )
+        l_count = link_counts.get(switch.slug, 0)
+        
+        hierarchy = "access"
+        if "cascada" in switch.hostname.lower() or trunk_count >= 5 or l_count >= 5:
+            hierarchy = "core"
+        elif trunk_count >= 2 or l_count >= 2:
+            hierarchy = "distribution"
+
         nodes.append(
             NetworkNode(
                 id=switch.slug,
@@ -285,13 +300,14 @@ def generate_topology(switches: list[SwitchRecord]) -> TopologyData:
                 ip=switch.ip,
                 model=switch.model,
                 group="switch",
+                hierarchy=hierarchy,
                 firmware=switch.firmware,
                 location=switch.location,
                 uptime=switch.uptime,
                 vlans=switch.vlans,
                 port_count=port_count,
                 trunk_count=trunk_count,
-                link_count=link_counts.get(switch.slug, 0),
+                link_count=l_count,
                 warnings=switch.warnings
             )
         )
