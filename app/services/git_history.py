@@ -129,3 +129,73 @@ def get_recent_changes(git_repo_path: Path, limit: int = 50) -> list[FileChange]
                 )
             )
     return changes
+
+
+def get_last_global_backup_time(git_repo_path: Path) -> str:
+    """Retrieve a user-friendly timestamp of the latest commit in the repository."""
+    import datetime
+    if not git_repo_path.exists() or not (git_repo_path / ".git").exists():
+        return "N/A"
+    
+    stdout = run_git_command(
+        git_repo_path,
+        ["log", "-1", "--format=%cd", "--date=iso-strict"],
+    )
+    val = stdout.strip()
+    
+    def format_friendly_datetime(dt_obj: datetime.datetime) -> str:
+        now = datetime.datetime.now(dt_obj.tzinfo)
+        if dt_obj.date() == now.date():
+            return f"Hoy {dt_obj.strftime('%I:%M %p')}"
+        elif dt_obj.date() == now.date() - datetime.timedelta(days=1):
+            return f"Ayer {dt_obj.strftime('%I:%M %p')}"
+        else:
+            return dt_obj.strftime("%d/%m %I:%M %p")
+
+    if not val:
+        try:
+            cfg_files = list(git_repo_path.glob("*.cfg"))
+            if cfg_files:
+                latest_mtime = max(f.stat().st_mtime for f in cfg_files)
+                dt = datetime.datetime.fromtimestamp(latest_mtime)
+                return format_friendly_datetime(dt)
+        except Exception:
+            return "N/A"
+    
+    try:
+        dt = datetime.datetime.fromisoformat(val)
+        return format_friendly_datetime(dt)
+    except Exception:
+        return val[:16].replace("T", " ")
+
+
+def get_last_commit_for_file(git_repo_path: Path, filename: str) -> dict | None:
+    """Retrieve details of the last commit for a specific file."""
+    if not git_repo_path.exists() or not (git_repo_path / ".git").exists():
+        return None
+    
+    stdout = run_git_command(
+        git_repo_path,
+        [
+            "log",
+            "-1",
+            "--format=%H|%ad|%an|%s",
+            "--date=iso-strict",
+            "--",
+            filename,
+        ],
+    )
+    val = stdout.strip()
+    if not val:
+        return None
+    
+    parts = val.split("|", maxsplit=3)
+    if len(parts) >= 4:
+        return {
+            "hash": parts[0][:7],
+            "date": parts[1],
+            "author": parts[2],
+            "message": parts[3],
+        }
+    return None
+

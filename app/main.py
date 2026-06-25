@@ -16,16 +16,19 @@ from fastapi.templating import Jinja2Templates
 from .core.config import settings
 from .repository import JsonInventoryRepository, compact_vlan_list, port_matches_vlan
 from .services.audit import generate_global_report
-from .services.git_history import get_file_diff, get_file_history, get_recent_changes
+from .services.git_history import get_file_diff, get_file_history, get_recent_changes, get_last_global_backup_time, get_last_commit_for_file
 from .services.topology import generate_topology, TopologyState, load_topology_state, save_topology_state
 from .services.webhook import run_oxidized_sync
 from .services.snmp import query_snmp_ports_status, get_dynamic_uptime_str
+from .services.oxidized import get_oxidized_nodes
 
 app = FastAPI(title="STLi Network Portal")
 app.mount("/static", StaticFiles(directory=settings.STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=settings.TEMPLATES_DIR)
 templates.env.filters["vlans"] = compact_vlan_list
+templates.env.globals["get_last_backup_time"] = lambda: get_last_global_backup_time(settings.BACKUPS_GIT_DIR)
+
 
 
 def get_repository() -> JsonInventoryRepository:
@@ -238,7 +241,7 @@ def refresh_vlans_cache(
 
 
 @app.get("/switches/{slug}", response_class=HTMLResponse)
-def switch_detail(
+async def switch_detail(
     request: Request,
     slug: str,
     repository: JsonInventoryRepository = Depends(get_repository),
@@ -247,7 +250,15 @@ def switch_detail(
     if switch is None:
         raise HTTPException(status_code=404, detail="Switch not found")
 
-    history = get_file_history(settings.BACKUPS_GIT_DIR, switch.source_file)
+    cfg_filename = switch.source_file.replace('.json', '.cfg')
+    history = get_file_history(settings.BACKUPS_GIT_DIR, cfg_filename)
+
+    ox_nodes = await get_oxidized_nodes()
+    ox_status = None
+    for n in ox_nodes:
+        if n.get("name", "").lower() == switch.hostname.lower() or n.get("ip") == switch.ip:
+            ox_status = n
+            break
 
     return templates.TemplateResponse(
         request,
@@ -256,8 +267,10 @@ def switch_detail(
             "active_page": "inventory",
             "switch": switch,
             "history": history,
+            "oxidized_status": ox_status,
         },
     )
+
 
 
 
@@ -368,6 +381,71 @@ def post_webhook_oxidized(background_tasks: BackgroundTasks) -> dict[str, str]:
     """Webhook endpoint to receive Oxidized backup change events."""
     background_tasks.add_task(run_oxidized_sync)
     return {"status": "accepted", "message": "Synchronization started in the background"}
+
+
+@app.get("/oxidized", response_class=HTMLResponse)
+def oxidized_page(
+    request: Request,
+    repository: JsonInventoryRepository = Depends(get_repository),
+) -> HTMLResponse:
+    """Render the Oxidized status page."""
+    return templates.TemplateResponse(
+        request,
+        "oxidized.html",
+        {
+            "active_page": "oxidized",
+        },
+    )
+
+
+@app.get("/api/oxidized/status")
+async def api_oxidized_status(
+    repository: JsonInventoryRepository = Depends(get_repository),
+):
+    """API endpoint returning real-time Oxidized backup status combined with Git details."""
+    nodes = await get_oxidized_nodes()
+    switches = repository.list_switches()
+
+    oxidized_map = {}
+    for node in nodes:
+        name = node.get("name")
+        ip = node.get("ip")
+        if name:
+            oxidized_map[name.lower()] = node
+        if ip:
+            oxidized_map[ip] = node
+
+    status_list = []
+    for switch in switches:
+        ox_node = oxidized_map.get(switch.hostname.lower()) or oxidized_map.get(switch.ip)
+        status = "unknown"
+        message = None
+        mtime = None
+
+        if ox_node:
+            status = ox_node.get("status", "unknown")
+            message = ox_node.get("message")
+            mtime = ox_node.get("mtime")
+
+        cfg_filename = switch.source_file.replace(".json", ".cfg")
+        last_commit = get_last_commit_for_file(settings.BACKUPS_GIT_DIR, cfg_filename)
+
+        status_list.append({
+            "hostname": switch.hostname,
+            "slug": switch.slug,
+            "ip": switch.ip,
+            "status": status,
+            "message": message,
+            "mtime": mtime,
+            "last_commit": last_commit
+        })
+
+    return {
+        "oxidized_connected": len(nodes) > 0,
+        "last_sync": get_last_global_backup_time(settings.BACKUPS_GIT_DIR),
+        "nodes": status_list
+    }
+
 
 
 @app.post("/api/switches/{ip}/ping")

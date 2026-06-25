@@ -50,6 +50,9 @@
 
       <!-- Right User Menu/Info -->
       <div class="aws-header-actions">
+        <span class="backup-header-time d-none d-lg-inline-block text-white-50 me-3" style="font-size: 0.85rem; border-right: 1px solid rgba(255,255,255,0.15); padding-right: 12px;">
+          <i class="bi bi-cloud-check-fill text-info me-1"></i>Último Respaldo: <strong class="text-white">{{ get_last_backup_time() }}</strong>
+        </span>
         <span class="fs-7 d-none d-md-inline text-white-50"><i class="bi bi-shield-fill-check me-1 text-success"></i>Consola Segura</span>
         <a href="{{ url_for('dashboard') }}" class="text-white text-decoration-none opacity-75 hover-opacity-100">
           <i class="bi bi-person-circle fs-5"></i>
@@ -95,6 +98,12 @@
             <a class="aws-sidebar-link" href="{{ url_for('changes') }}">
               <i class="bi bi-clock-history"></i>
               <span>Cambios</span>
+            </a>
+          </li>
+          <li class="aws-sidebar-item {% if active_page == 'oxidized' %}active{% endif %}">
+            <a class="aws-sidebar-link" href="/oxidized">
+              <i class="bi bi-cloud-arrow-down-fill"></i>
+              <span>Oxidized</span>
             </a>
           </li>
           <li class="aws-sidebar-item {% if active_page == 'search' %}active{% endif %}">

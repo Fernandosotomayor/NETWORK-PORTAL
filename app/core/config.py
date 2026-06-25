@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     STATE_FILE: Path = Path("data/topology_state.json")
     OXIDIZED_ARCHIVE_DIR: Path = Path(r"C:\Users\fernando.sotomayor\SCHIAPPACASSE INVESTMENT S.A\Gerencia TI - Infraestructura - Documentos\Infraestructura\Backup\switches 2026 - oxidized\oxidized-archive")
     OXIDIZED_REPO_URL: str = "git@github.com:STLi-SPA/INFRA-BACKUPS.git"
+    OXIDIZED_URL: str = "http://10.40.20.70:8888"
 
     @model_validator(mode="after")
     def resolve_relative_paths(self) -> Settings:

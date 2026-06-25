@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Estado de Respaldos Oxidized - STLi Network Portal{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-0 fw-bold text-dark"><i class="bi bi-cloud-arrow-down-fill text-primary me-2"></i>Estado de Respaldos (Oxidized)</h1>
+    <p class="text-secondary mb-0">Monitoreo en tiempo real de los respaldos de configuración de switches y sincronización con GitHub.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button id="btnSync" class="btn-aws-primary text-decoration-none border-0" onclick="triggerManualSync()">
+      <i id="syncIcon" class="bi bi-arrow-repeat me-1"></i>
+      <span id="syncText">Sincronizar Ahora</span>
+    </button>
+    <button class="btn-aws-secondary text-decoration-none border-0" onclick="fetchStatus()">
+      <i class="bi bi-arrow-clockwise me-1"></i> Refrescar
+    </button>
+  </div>
+</div>
+
+<!-- Connection Status Banner -->
+<div id="connectionBanner" class="alert alert-danger d-none border-0 shadow-sm d-flex gap-3 align-items-start mb-4" role="alert">
+  <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+  <div>
+    <h4 class="alert-heading h6 fw-bold mb-1">Oxidized Desconectado</h4>
+    <p class="mb-0 fs-7">No se pudo establecer conexión con el servicio de Oxidized en <code class="bg-light px-1 text-danger rounded" id="oxUrl">http://10.40.20.70:8888</code>. Los estados mostrados corresponden al último reporte registrado.</p>
+  </div>
+</div>
+
+<!-- Summary Metrics -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-3">
+    <div class="aws-metric-card">
+      <div class="aws-metric-label">Switches en Inventario</div>
+      <div class="aws-metric-value" id="statTotal">-</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="aws-metric-card">
+      <div class="aws-metric-label">Respaldos Exitosos</div>
+      <div class="aws-metric-value text-success" id="statSuccess">-</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="aws-metric-card">
+      <div class="aws-metric-label">Respaldos Fallidos</div>
+      <div class="aws-metric-value text-danger" id="statFailed">-</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="aws-metric-card">
+      <div class="aws-metric-label">Último Respaldo Global</div>
+      <div class="aws-metric-value fs-5 mt-2 text-dark" id="statSyncTime">-</div>
+    </div>
+  </div>
+</div>
+
+<!-- Table Status Section -->
+<div class="aws-panel">
+  <div class="aws-panel-header flex-column flex-sm-row gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <h2>Estados de Respaldos Individuales</h2>
+      <span class="badge rounded-pill text-bg-info fs-8 px-2 py-0.5 animate-pulse text-white"><i class="bi bi-arrow-repeat me-1"></i>Auto-actualizando c/5s</span>
+    </div>
+    <div class="w-100 w-sm-auto">
+      <input type="text" id="tableSearch" class="form-control form-control-sm" placeholder="Filtrar switches..." onkeyup="filterTable()">
+    </div>
+  </div>
+  <div class="aws-panel-body p-0">
+    <div class="table-aws-container">
+      <table class="table-aws" id="statusTable">
+        <thead>
+          <tr>
+            <th>Switch</th>
+            <th>IP</th>
+            <th>Estado Backup</th>
+            <th>Detalles de Error</th>
+            <th>Último Respaldo</th>
+            <th>Último Commit Git</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="6" class="text-center py-5 text-secondary">
+              <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+              Cargando estados de Oxidized...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  let pollInterval = null;
+
+  async function fetchStatus() {
+    try {
+      const response = await fetch('/api/oxidized/status');
+      if (!response.ok) throw new Error('API response not ok');
+      const data = await response.json();
+      
+      const banner = document.getElementById('connectionBanner');
+      if (data.oxidized_connected) {
+        banner.classList.add('d-none');
+      } else {
+        banner.classList.remove('d-none');
+      }
+
+      const nodes = data.nodes || [];
+      document.getElementById('statTotal').innerText = nodes.length;
+      
+      const successCount = nodes.filter(n => n.status === 'success').length;
+      const failedCount = nodes.filter(n => ['error', 'no_connection', 'timeout', 'never_backup'].includes(n.status) || (n.status && n.status !== 'success' && n.status !== 'unknown')).length;
+      
+      document.getElementById('statSuccess').innerText = successCount;
+      document.getElementById('statFailed').innerText = failedCount;
+      document.getElementById('statSyncTime').innerText = data.last_sync || 'N/A';
+
+      const tbody = document.getElementById('tableBody');
+      if (nodes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary">No hay switches registrados</td></tr>';
+        return;
+      }
+
+      let rowsHtml = '';
+      nodes.forEach(node => {
+        let statusBadge = '';
+        
+        if (node.status === 'success') {
+          statusBadge = '<span class="badge rounded-pill text-bg-success px-2 py-1 fs-8"><i class="bi bi-check-circle-fill me-1"></i>Exitoso</span>';
+        } else if (node.status === 'no_connection' || node.status === 'timeout') {
+          statusBadge = '<span class="badge rounded-pill text-bg-danger px-2 py-1 fs-8"><i class="bi bi-wifi-off me-1"></i>Sin Conexión</span>';
+        } else if (node.status === 'error') {
+          statusBadge = '<span class="badge rounded-pill text-bg-danger px-2 py-1 fs-8"><i class="bi bi-x-octagon-fill me-1"></i>Error</span>';
+        } else {
+          statusBadge = `<span class="badge rounded-pill text-bg-warning px-2 py-1 fs-8"><i class="bi bi-question-circle me-1"></i>${node.status || 'Desconocido'}</span>`;
+        }
+
+        const errorMsg = node.message ? `<code class="text-danger bg-danger bg-opacity-10 px-2 py-1 rounded fs-8 text-break">${escapeHtml(node.message)}</code>` : '<span class="text-muted">—</span>';
+
+        let gitInfo = '<span class="text-muted">—</span>';
+        if (node.last_commit) {
+          gitInfo = `
+            <div class="d-flex flex-column gap-1">
+              <span class="text-dark fw-semibold fs-7 text-truncate" style="max-width: 250px;" title="${escapeHtml(node.last_commit.message)}">
+                ${escapeHtml(node.last_commit.message)}
+              </span>
+              <span class="text-secondary fs-8 d-flex align-items-center gap-2">
+                <code class="text-primary bg-primary bg-opacity-10 px-1 rounded">${node.last_commit.hash}</code>
+                <span>${formatDateString(node.last_commit.date)}</span>
+              </span>
+            </div>
+          `;
+        }
+
+        const lastBackupTime = node.mtime ? formatDateString(node.mtime) : '<span class="text-muted">Nunca</span>';
+
+        rowsHtml += `
+          <tr>
+            <td class="fw-semibold">
+              <a href="/switches/${node.slug}" class="text-decoration-none hover-underline d-flex align-items-center gap-2">
+                <i class="bi bi-hdd-fill opacity-75"></i>
+                <span>${escapeHtml(node.hostname)}</span>
+              </a>
+            </td>
+            <td><code class="text-secondary bg-light px-2 py-0.5 rounded fs-8">${node.ip}</code></td>
+            <td>${statusBadge}</td>
+            <td style="max-width: 300px;">${errorMsg}</td>
+            <td>${lastBackupTime}</td>
+            <td>${gitInfo}</td>
+          </tr>
+        `;
+      });
+      
+      tbody.innerHTML = rowsHtml;
+      filterTable();
+
+    } catch (error) {
+      console.error('Error fetching Oxidized status:', error);
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-5 text-danger">
+            <i class="bi bi-exclamation-triangle-fill fs-4 d-block mb-2"></i>
+            Error al cargar estados desde el servidor
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  async function triggerManualSync() {
+    const btn = document.getElementById('btnSync');
+    const icon = document.getElementById('syncIcon');
+    const text = document.getElementById('syncText');
+    
+    btn.disabled = true;
+    icon.className = 'bi bi-arrow-repeat spinner-border spinner-border-sm border-0';
+    text.innerText = 'Sincronizando...';
+
+    try {
+      const response = await fetch('/api/webhooks/oxidized', {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        showToast("Sincronización en segundo plano iniciada correctamente.", "success");
+        setTimeout(fetchStatus, 1500);
+      } else {
+        throw new Error('Sync request failed');
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("No se pudo iniciar la sincronización.", "danger");
+    } finally {
+      setTimeout(() => {
+        btn.disabled = false;
+        icon.className = 'bi bi-arrow-repeat me-1';
+        text.innerText = 'Sincronizar Ahora';
+      }, 3000);
+    }
+  }
+
+  function filterTable() {
+    const query = document.getElementById('tableSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#statusTable tbody tr');
+    
+    rows.forEach(row => {
+      if (row.cells.length < 6) return;
+      
+      const hostname = row.cells[0].innerText.toLowerCase();
+      const ip = row.cells[1].innerText.toLowerCase();
+      const status = row.cells[2].innerText.toLowerCase();
+      
+      if (hostname.includes(query) || ip.includes(query) || status.includes(query)) {
+        row.classList.remove('d-none');
+      } else {
+        row.classList.add('d-none');
+      }
+    });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function formatDateString(isoStr) {
+    if (!isoStr) return '';
+    try {
+      const date = new Date(isoStr);
+      if (isNaN(date.getTime())) return isoStr;
+      return date.toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (e) {
+      return isoStr;
+    }
+  }
+
+  function showToast(message, type = "info") {
+    const container = document.body;
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} border-0 shadow-lg position-fixed bottom-0 end-0 m-3 p-3 text-white`;
+    toast.style.zIndex = "9999";
+    toast.style.backgroundColor = type === 'success' ? '#1d8102' : '#d13212';
+    toast.innerHTML = `<div class="d-flex align-items-center gap-2"><i class="bi ${type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}"></i><span>${message}</span></div>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchStatus();
+    pollInterval = setInterval(() => {
+      if (!document.hidden) {
+        fetchStatus();
+      }
+    }, 5000);
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (pollInterval) clearInterval(pollInterval);
+  });
+</script>
+{% endblock %}

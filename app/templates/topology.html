@@ -1,69 +1,251 @@
 {% extends "base.html" %}
 
-{% block title %}Topología NOC | STLi Network Portal{% endblock %}
+{% block title %}Topología NOC 3D | STLi Network Portal{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-  <h1 class="h3 mb-1 fw-bold text-dark">Topología de Red NOC</h1>
-  <p class="text-secondary mb-0">Gestión interactiva del diagrama de red, enrutamiento ortogonal y persistencia de ubicaciones.</p>
-</div>
+<style>
+  /* 3D NOC View Styles */
+  .topology-3d-wrapper {
+    position: relative;
+    width: 100%;
+    height: 720px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background-color: #0A192F;
+    border: 1px solid #1e293b;
+    box-shadow: var(--shadow-md);
+  }
 
-<!-- AWS Style Toolbar -->
-<div class="aws-panel mb-4">
-  <div class="aws-panel-body py-2 px-3 bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
-    <div class="d-flex flex-wrap gap-2">
-      <button class="btn btn-sm btn-aws-primary" id="btn-save">
-        <i class="bi bi-floppy me-1"></i> Guardar Distribución
-      </button>
-      <button class="btn btn-sm btn-aws-secondary" id="btn-bg">
-        <i class="bi bi-image me-1"></i> Subir Plano de Fondo
-      </button>
-      <button class="btn btn-sm btn-aws-secondary d-none text-danger" id="btn-clear-bg">
-        <i class="bi bi-trash me-1"></i> Quitar Plano
-      </button>
-      <button class="btn btn-sm btn-aws-secondary" id="btn-mode-link">
-        <i class="bi bi-node-plus me-1"></i> Enlace Manual: OFF
-      </button>
-    </div>
-    <div class="text-secondary small fw-semibold" id="status-text">
-      <i class="bi bi-info-circle me-1"></i>Arrastra los switches para ubicarlos sobre el plano de red.
-    </div>
+  #graph-3d {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* HUD Overlay Panel */
+  .hud-panel {
+    position: absolute;
+    top: 15px;
+    right: -340px;
+    width: 320px;
+    height: calc(100% - 30px);
+    background: rgba(12, 27, 42, 0.95);
+    backdrop-filter: blur(8px);
+    border-left: 3px solid var(--stli-blue-accent);
+    border-radius: 6px;
+    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1000;
+    overflow-y: auto;
+    color: #e2e8f0;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .hud-panel.hud-active {
+    right: 15px;
+  }
+
+  .hud-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(65, 175, 249, 0.15);
+    background: rgba(0, 96, 168, 0.15);
+  }
+
+  .hud-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .hud-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .hud-close-btn:hover {
+    color: #ffffff;
+  }
+
+  .hud-body {
+    padding: 20px;
+  }
+
+  .hud-section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  .hud-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.85rem;
+  }
+
+  .hud-item span {
+    color: #94a3b8;
+  }
+
+  .hud-item code {
+    color: var(--stli-blue-accent);
+    font-family: 'Consolas', monospace;
+    font-size: 0.8rem;
+    background: rgba(65, 175, 249, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .hud-vlans-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .hud-vlan-badge {
+    font-size: 0.7rem;
+    font-family: 'Consolas', monospace;
+    padding: 2px 6px;
+    background: rgba(65, 175, 249, 0.15);
+    color: var(--stli-blue-accent);
+    border-radius: 10px;
+    border: 1px solid rgba(65, 175, 249, 0.2);
+  }
+
+  /* Control Panel */
+  .control-hud {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 1000;
+    background: rgba(12, 27, 42, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 280px;
+  }
+
+  .control-hud input {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(65, 175, 249, 0.3);
+    color: #ffffff;
+    font-size: 0.8rem;
+  }
+
+  .control-hud input:focus {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: var(--stli-blue-accent);
+    color: #ffffff;
+    box-shadow: none;
+  }
+
+  /* 3D Legend */
+  .legend-hud {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    z-index: 1000;
+    background: rgba(12, 27, 42, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    display: flex;
+    gap: 14px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+</style>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-0 fw-bold text-dark">Topología de Red NOC 3D</h1>
+    <p class="text-secondary mb-0">Diagrama interactivo en 3D WebGL con físicas de autodispersión d3-force-3d y tráfico de datos simulado.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn-aws-primary text-decoration-none border-0" id="btn-save" onclick="saveManualLinks()">
+      <i class="bi bi-floppy me-1"></i> Guardar Enlaces
+    </button>
+    <button class="btn-aws-secondary text-decoration-none border-0" id="btn-toggle-particles" onclick="toggleParticles()">
+      <i class="bi bi-speedometer"></i> Tráfico: ON
+    </button>
+    <button class="btn-aws-secondary text-decoration-none border-0" id="btn-reset-cam" onclick="resetCamera()">
+      <i class="bi bi-camera-video"></i> Reset Cámara
+    </button>
   </div>
 </div>
 
-<div class="row g-3 mb-4">
-  <!-- Sidebar of Unplaced switches -->
-  <div class="col-12 col-xl-3">
-    <div class="aws-panel h-100">
-      <div class="aws-panel-header">
-        <h2>Equipos sin Ubicar</h2>
-      </div>
-      <div class="aws-panel-body">
-        <div id="unplaced-list" class="d-flex flex-column gap-2" style="max-height: 520px; overflow-y: auto;">
-          <span class="text-muted small"><i class="bi bi-check-circle me-1 text-success"></i>Todos los equipos están ubicados en el plano.</span>
-        </div>
-      </div>
+<div class="topology-3d-wrapper">
+  <!-- Interactive 3D Canvas Container -->
+  <div id="graph-3d"></div>
+
+  <!-- Search & Action Overlay HUD -->
+  <div class="control-hud">
+    <div class="position-relative">
+      <i class="bi bi-search text-secondary position-absolute" style="left: 10px; top: 8px;"></i>
+      <input type="text" id="searchNode" class="form-control form-control-sm ps-4" placeholder="Buscar switch por nombre o IP..." onkeyup="searchAndFly()">
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-xs btn-outline-info w-100 fs-8 py-1" id="btn-manual-link-mode" onclick="toggleManualLinkMode()">
+        <i class="bi bi-link-45deg"></i> Enlace Manual: OFF
+      </button>
+    </div>
+    <div class="text-info fs-9" id="hud-status-text">
+      <i class="bi bi-info-circle me-1"></i> Haz clic en un switch para inspeccionarlo y volar hacia él.
     </div>
   </div>
 
-  <!-- Graph Canvas -->
-  <div class="col-12 col-xl-9">
-    <div class="aws-panel h-100">
-      <div id="network-container" style="position: relative; overflow: hidden; height: 600px; background-color: #fafbfc;">
-        <!-- Blueprint grid pattern -->
-        <div id="blueprint-grid" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 0;
-             background-size: 30px 30px;
-             background-image: linear-gradient(to right, rgba(112, 114, 114, 0.1) 1px, transparent 1px),
-                               linear-gradient(to bottom, rgba(112, 114, 114, 0.1) 1px, transparent 1px);
-             background-position: center;"></div>
-        
-        <!-- Floorplan background image container -->
-        <div id="floorplan-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.8;"></div>
-        
-        <!-- Cytoscape container -->
-        <div id="network-graph" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
-      </div>
+  <!-- 3D Graph Legend -->
+  <div class="legend-hud">
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #ffd700;"></div>
+      <span>Core (SW-CASCADA)</span>
     </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #41aff9;"></div>
+      <span>Switches de Red</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #10b981;"></div>
+      <span>Enlace Auto (TRUNK)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color" style="background-color: #a855f7;"></div>
+      <span>Enlace Manual</span>
+    </div>
+  </div>
+
+  <!-- Floating Switch Detail HUD Panel -->
+  <div class="hud-panel" id="hud-panel">
+    <!-- Rendered dynamically on click -->
   </div>
 </div>
 
@@ -79,11 +261,11 @@
         <p class="small text-secondary">Establecer enlace manual entre <strong id="link-src-name">S1</strong> y <strong id="link-tgt-name">S2</strong>.</p>
         <div class="row g-2">
           <div class="col-6">
-            <label class="form-label small mb-1 fw-semibold text-dark" id="lbl-port-src">Puerto en S1</label>
+            <label class="form-label small mb-1 fw-semibold text-dark" id="lbl-port-src">Puerto origen</label>
             <input type="text" class="form-control form-control-sm" id="port-src" placeholder="ej. gi1/0/1">
           </div>
           <div class="col-6">
-            <label class="form-label small mb-1 fw-semibold text-dark" id="lbl-port-tgt">Puerto en S2</label>
+            <label class="form-label small mb-1 fw-semibold text-dark" id="lbl-port-tgt">Puerto destino</label>
             <input type="text" class="form-control form-control-sm" id="port-tgt" placeholder="ej. gi1/0/22">
           </div>
         </div>
@@ -96,411 +278,369 @@
   </div>
 </div>
 
-<!-- Import Cytoscape.js from CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+<!-- Import Three.js, SpriteText, and 3D Force Graph via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three-spritetext@1.8.0/dist/three-spritetext.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.72.0/dist/3d-force-graph.min.js"></script>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const backendNodes = {{ data.nodes | tojson }};
-    const backendLinks = {{ data.links | tojson }};
-    let topologyState = { positions: {}, background_url: "", manual_links: [] };
+  const backendNodes = {{ data.nodes | tojson }};
+  const backendLinks = {{ data.links | tojson }};
+  let manualLinks = [];
+  let isManualLinkMode = false;
+  let manualLinkSource = null;
+  let particlesActive = true;
+  let graph = null;
 
-    // SVG Switch Icon URL - Redesigned with STLi Blue corporate identity
-    const switchSvg = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="100" height="40" viewBox="0 0 100 40">
-        <!-- Switch Chassis - STLi Blue background -->
-        <rect x="2" y="2" width="96" height="36" rx="4" fill="#0060A8" stroke="#004F8A" stroke-width="2"/>
-        
-        <!-- Ports (Active - STLi Light Blue) -->
-        <rect x="10" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
-        <rect x="20" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
-        <rect x="30" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
-        <rect x="40" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
-        <rect x="50" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
-        <rect x="60" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
-        <rect x="70" y="8" width="6" height="6" fill="#41AFF9" rx="1"/>
-        <rect x="80" y="8" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        
-        <!-- Ports (Passive - Light Gray) -->
-        <rect x="10" y="20" width="6" height="6" fill="#41AFF9" rx="1"/>
-        <rect x="20" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        <rect x="30" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        <rect x="40" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        <rect x="50" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        <rect x="60" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        <rect x="70" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        <rect x="80" y="20" width="6" height="6" fill="#cbd5e1" rx="1"/>
-        
-        <!-- Status Indicator LED (Green for active device) -->
-        <circle cx="92" cy="20" r="2.5" fill="#1d8102"/>
-      </svg>
-    `);
-
-    // UI elements references
-    const btnSave = document.getElementById("btn-save");
-    const btnBg = document.getElementById("btn-bg");
-    const btnClearBg = document.getElementById("btn-clear-bg");
-    const btnModeLink = document.getElementById("btn-mode-link");
-    const statusText = document.getElementById("status-text");
-    const unplacedList = document.getElementById("unplaced-list");
-    const floorplanContainer = document.getElementById("floorplan-bg");
-
-    let isLinkMode = false;
-    let linkSourceNode = null;
-    let cy = null;
-
-    // Load topology state first
+  document.addEventListener("DOMContentLoaded", () => {
+    // 1. Fetch manual links from backend topology state
     fetch("/api/topology/state")
       .then(res => res.json())
       .then(state => {
-        topologyState = state;
-        if (topologyState.background_url) {
-          floorplanContainer.style.backgroundImage = `url('${topologyState.background_url}')`;
-          btnClearBg.classList.remove("d-none");
-        }
-        initGraph();
-      })
-      .catch(() => initGraph());
-
-    function initGraph() {
-      const elements = [];
-      const unplaced = [];
-
-      // Process Nodes
-      backendNodes.forEach((node, index) => {
-        const savedPos = topologyState.positions[node.id];
-        if (savedPos) {
-          elements.push({
-            group: 'nodes',
-            data: { id: node.id, label: node.label, ip: node.ip, model: node.model },
-            position: { x: savedPos.x, y: savedPos.y }
-          });
-        } else {
-          // Unplaced: list in sidebar and place at dynamic offsets on the left
-          unplaced.push(node);
-          elements.push({
-            group: 'nodes',
-            data: { id: node.id, label: node.label, ip: node.ip, model: node.model, isUnplaced: true },
-            position: { x: 70, y: 70 + (unplaced.length - 1) * 75 }
-          });
-        }
-      });
-
-      // Update sidebar listing of unplaced switches
-      updateSidebarUI(unplaced);
-
-      // Process LLDP Auto Links
-      backendLinks.forEach((link, idx) => {
-        elements.push({
-          group: 'edges',
-          data: {
-            id: `edge-auto-${idx}`,
-            source: link.source,
-            target: link.target,
-            label: link.label
-          }
-        });
-      });
-
-      // Process Manual Links from state
-      (topologyState.manual_links || []).forEach((link, idx) => {
-        const s_port = link.source_port;
-        const t_port = link.target_port;
-        const label = (s_port && t_port) ? `${s_port} <-> ${t_port} (M)` : (s_port ? `${s_port} -> ? (M)` : `? <- ${t_port} (M)`);
-        elements.push({
-          group: 'edges',
-          data: {
-            id: `edge-manual-${idx}`,
-            source: link.source,
-            target: link.target,
-            label: label,
-            isManual: true
-          }
-        });
-      });
-
-      // Initialize Cytoscape
-      cy = cytoscape({
-        container: document.getElementById('network-graph'),
-        elements: elements,
-        style: [
-          {
-            selector: 'node',
-            style: {
-              'shape': 'rectangle',
-              'width': '84px',
-              'height': '34px',
-              'background-image': switchSvg,
-              'background-fit': 'contain',
-              'background-color': 'transparent',
-              'label': 'data(label)',
-              'text-valign': 'bottom',
-              'text-margin-y': 6,
-              'font-size': '11px',
-              'font-weight': '600',
-              'color': '#16191f',
-              'font-family': 'system-ui, -apple-system, sans-serif'
-            }
-          },
-          {
-            selector: 'node[isUnplaced]',
-            style: {
-              'border-width': '2px',
-              'border-color': '#eb7f00',
-              'border-style': 'dashed'
-            }
-          },
-          {
-            selector: 'edge',
-            style: {
-              'curve-style': 'taxi', // Manhattan style orthogonal routing
-              'taxi-direction': 'auto',
-              'taxi-turn': '40px',
-              'width': 2.5,
-              'line-color': '#cbd5e1',
-              'label': 'data(label)',
-              'font-size': '9px',
-              'font-family': 'Consolas, Monaco, monospace',
-              'text-background-opacity': 1,
-              'text-background-color': '#ffffff',
-              'text-background-shape': 'roundrectangle',
-              'text-background-padding': '3px',
-              'color': '#545b64',
-              'target-arrow-shape': 'none'
-            }
-          },
-          {
-            selector: 'edge[isManual]',
-            style: {
-              'line-color': '#41AFF9', // Accent Blue for manual connections
-              'line-style': 'dashed'
-            }
-          },
-          {
-            selector: 'node:selected',
-            style: {
-              'background-color': 'rgba(0, 96, 168, 0.12)',
-              'border-width': '2px',
-              'border-color': '#0060A8',
-              'border-style': 'solid'
-            }
-          }
-        ],
-        layout: {
-          name: 'preset'
-        },
-        userZoomingEnabled: true,
-        userPanningEnabled: true,
-        boxSelectionEnabled: false
-      });
-
-      // Node interaction logic
-      cy.on('tap', 'node', function (evt) {
-        const node = evt.target;
-        
-        if (isLinkMode) {
-          if (!linkSourceNode) {
-            linkSourceNode = node;
-            statusText.innerHTML = `⚙️ Origen: <strong>${node.data('label')}</strong>. Selecciona el switch de destino...`;
-            node.select();
-          } else {
-            if (linkSourceNode.id() === node.id()) {
-              statusText.innerHTML = "⚠️ No puedes enlazar un equipo consigo mismo.";
-              return;
-            }
-            
-            // Show modal to define port descriptions
-            document.getElementById("link-src-name").innerText = linkSourceNode.data('label');
-            document.getElementById("link-tgt-name").innerText = node.data('label');
-            document.getElementById("lbl-port-src").innerText = `Puerto en ${linkSourceNode.data('label')}`;
-            document.getElementById("lbl-port-tgt").innerText = `Puerto en ${node.data('label')}`;
-            
-            const modal = new bootstrap.Modal(document.getElementById('linkModal'));
-            modal.show();
-            
-            // Confirm button logic in Modal
-            document.getElementById("btn-confirm-link").onclick = function () {
-              const srcPort = document.getElementById("port-src").value.trim();
-              const tgtPort = document.getElementById("port-tgt").value.trim();
-              
-              const edgeId = `edge-manual-new-${Date.now()}`;
-              const label = (srcPort && tgtPort) ? `${srcPort} <-> ${tgtPort} (M)` : (srcPort ? `${srcPort} -> ? (M)` : `? <- ${tgtPort} (M)`);
-              cy.add({
-                group: 'edges',
-                data: {
-                  id: edgeId,
-                  source: linkSourceNode.id(),
-                  target: node.id(),
-                  label: label,
-                  isManual: true
-                }
-              });
-
-              topologyState.manual_links.push({
-                source: linkSourceNode.id(),
-                target: node.id(),
-                source_port: srcPort || null,
-                target_port: tgtPort || null
-              });
-
-              toggleLinkMode(false);
-              modal.hide();
-              
-              document.getElementById("port-src").value = "";
-              document.getElementById("port-tgt").value = "";
-            };
-          }
-        } else {
-          statusText.innerHTML = `Dispositivo: <strong>${node.data('label')}</strong> (${node.data('ip')}) · Modelo: ${node.data('model') || '-'}`;
-        }
-      });
-
-      // Clear selection on canvas click
-      cy.on('tap', function (evt) {
-        if (evt.target === cy) {
-          if (isLinkMode) {
-            statusText.innerText = "Modo Enlace: Selecciona el switch de origen...";
-            if (linkSourceNode) {
-              linkSourceNode.unselect();
-              linkSourceNode = null;
-            }
-          } else {
-            statusText.innerText = "Usa Drag & Drop para ubicar los switches en el plano.";
-          }
-        }
-      });
-
-      // Drag node triggers position updates locally
-      cy.on('dragfree', 'node', function (evt) {
-        const node = evt.target;
-        if (node.data('isUnplaced')) {
-          node.removeData('isUnplaced');
-          node.style({ 'border-width': '0px' });
-          refreshSidebar();
-        }
-      });
-    }
-
-    function updateSidebarUI(unplaced) {
-      if (unplaced.length > 0) {
-        unplacedList.innerHTML = "";
-        unplaced.forEach(node => {
-          const div = document.createElement("div");
-          div.className = "p-2 border rounded bg-white shadow-sm small d-flex justify-content-between align-items-center";
-          div.innerHTML = `
-            <div>
-              <strong class="text-dark d-block">${node.label}</strong>
-              <span class="text-secondary font-monospace" style="font-size: 0.72rem;">${node.ip}</span>
-            </div>
-            <span class="badge bg-warning text-dark fs-7">Pendiente</span>
-          `;
-          unplacedList.appendChild(div);
-        });
-      } else {
-        unplacedList.innerHTML = '<span class="text-muted small"><i class="bi bi-check-circle me-1 text-success"></i>Todos los equipos están ubicados en el plano.</span>';
-      }
-    }
-
-    function refreshSidebar() {
-      const unplacedNodes = cy.nodes().filter(node => node.data('isUnplaced') === true);
-      const unplacedArray = unplacedNodes.map(node => ({
-        label: node.data('label'),
-        ip: node.data('ip')
-      }));
-      updateSidebarUI(unplacedArray);
-    }
-
-    // Toggle link drawing mode
-    function toggleLinkMode(active) {
-      isLinkMode = active;
-      linkSourceNode = null;
-      if (active) {
-        btnModeLink.classList.replace("btn-aws-secondary", "btn-danger");
-        btnModeLink.classList.add("text-white");
-        btnModeLink.innerHTML = "<i class='bi bi-node-plus-fill me-1'></i> Enlace Manual: ON";
-        statusText.innerText = "Modo Edición: Selecciona el switch de origen para el enlace...";
-        cy.nodes().unselect();
-      } else {
-        btnModeLink.classList.replace("btn-danger", "btn-aws-secondary");
-        btnModeLink.classList.remove("text-white");
-        btnModeLink.innerHTML = "<i class='bi bi-node-plus me-1'></i> Enlace Manual: OFF";
-        statusText.innerText = "Usa Drag & Drop para ubicar los switches en el plano.";
-        cy.nodes().unselect();
-      }
-    }
-
-    btnModeLink.onclick = function () {
-      toggleLinkMode(!isLinkMode);
-    };
-
-    // Save positions and manual links to backend API
-    btnSave.onclick = function () {
-      if (!cy) return;
-      
-      const positions = {};
-      cy.nodes().forEach(node => {
-        if (!node.data('isUnplaced')) {
-          positions[node.id()] = {
-            x: Math.round(node.position().x),
-            y: Math.round(node.position().y)
-          };
-        }
-      });
-
-      topologyState.positions = positions;
-
-      btnSave.disabled = true;
-      btnSave.innerText = "Guardando...";
-
-      fetch("/api/topology/state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(topologyState)
-      })
-      .then(res => res.json())
-      .then(res => {
-        if (res.status === "success") {
-          statusText.innerHTML = "🟢 <strong>Distribución del plano guardada con éxito.</strong>";
-          setTimeout(() => {
-            statusText.innerText = "Usa Drag & Drop para ubicar los switches en el plano.";
-          }, 3000);
-        } else {
-          statusText.innerHTML = "🔴 <strong>Error al guardar posiciones.</strong>";
-        }
+        manualLinks = state.manual_links || [];
+        init3DGraph();
       })
       .catch(() => {
-        statusText.innerHTML = "🔴 <strong>Error de conexión con el backend.</strong>";
-      })
-      .finally(() => {
-        btnSave.disabled = false;
-        btnSave.innerHTML = "<i class='bi bi-floppy me-1'></i> Guardar Distribución";
+        init3DGraph();
       });
-    };
-
-    // Floorplan configuration
-    btnBg.onclick = function () {
-      const url = prompt("Introduce la URL de la imagen del plano de fondo (ej. plano.png o una URL absoluta):", topologyState.background_url || "");
-      if (url !== null) {
-        const cleanedUrl = url.trim();
-        topologyState.background_url = cleanedUrl;
-        
-        if (cleanedUrl) {
-          floorplanContainer.style.backgroundImage = `url('${cleanedUrl}')`;
-          btnClearBg.classList.remove("d-none");
-          statusText.innerHTML = "Imagen de plano cargada correctamente.";
-        } else {
-          floorplanContainer.style.backgroundImage = "";
-          btnClearBg.classList.add("d-none");
-        }
-      }
-    };
-
-    btnClearBg.onclick = function () {
-      topologyState.background_url = "";
-      floorplanContainer.style.backgroundImage = "";
-      btnClearBg.classList.add("d-none");
-      statusText.innerHTML = "Plano de fondo removido.";
-    };
   });
+
+  function init3DGraph() {
+    // Merge backend links with manual links
+    const graphLinks = [...backendLinks];
+    manualLinks.forEach(ml => {
+      // Avoid duplication
+      const exists = graphLinks.some(l => 
+        (l.source === ml.source && l.target === ml.target) || 
+        (l.source === ml.target && l.target === ml.source)
+      );
+      if (!exists) {
+        graphLinks.push({
+          source: ml.source,
+          target: ml.target,
+          source_port: ml.source_port,
+          target_port: ml.target_port,
+          label: `${ml.source_port || '?'} <-> ${ml.target_port || '?'}`,
+          link_type: 'manual'
+        });
+      }
+    });
+
+    const graphContainer = document.getElementById("graph-3d");
+    graph = ForceGraph3D()(graphContainer)
+      .graphData({ nodes: backendNodes, links: graphLinks })
+      .backgroundColor('#0A192F')
+      .showNavInfo(false)
+      // Custom Node rendering (Switch block with blinking LED)
+      .nodeThreeObject(node => {
+        const isCore = node.id === 'sw-cascada' || node.label.toLowerCase().includes('cascada');
+        const color = isCore ? 0xffd700 : 0x0060a8; // gold for core, blue for client/access
+        
+        const group = new THREE.Group();
+
+        // 3D Box for switch
+        const geometry = new THREE.BoxGeometry(14, 4, 10);
+        const material = new THREE.MeshPhongMaterial({
+          color: color,
+          transparent: true,
+          opacity: 0.95,
+          shininess: 90
+        });
+        const box = new THREE.Mesh(geometry, material);
+        group.add(box);
+
+        // Blinking Active LEDs
+        const ledMat = new THREE.MeshBasicMaterial({ color: 0x41aff9 });
+        const ledGeom = new THREE.SphereGeometry(0.4, 6, 6);
+        const ledCount = Math.min(node.port_count || 12, 16);
+        
+        for (let i = 0; i < ledCount; i++) {
+          const led = new THREE.Mesh(ledGeom, ledMat);
+          // Position on front panel of the switch
+          led.position.set(-6 + (i % 8) * 1.5, 1.2, 5.1);
+          group.add(led);
+        }
+
+        // Floating label Sprite Text
+        const sprite = new SpriteText(node.label);
+        sprite.color = '#e2e8f0';
+        sprite.textHeight = 3.5;
+        sprite.position.set(0, -6, 0);
+        group.add(sprite);
+
+        return group;
+      })
+      // Link properties
+      .linkColor(link => link.link_type === 'manual' ? '#a855f7' : '#10b981')
+      .linkWidth(link => link.link_type === 'manual' ? 2 : 1.5)
+      // Dynamic Traffic Particles
+      .linkDirectionalParticles(link => particlesActive ? 3 : 0)
+      .linkDirectionalParticleWidth(2)
+      .linkDirectionalParticleSpeed(0.005)
+      .linkDirectionalParticleColor(link => link.link_type === 'manual' ? '#c084fc' : '#34d399')
+      // Handlers
+      .onNodeClick((node, event) => {
+        if (isManualLinkMode) {
+          handleManualLinkSelection(node);
+        } else {
+          flyToNode(node);
+        }
+      })
+      // Add custom lighting to the scene
+      .cooldownTime(5000); // convergence cooldown
+
+    // Ambient & Directional light
+    const scene = graph.scene();
+    scene.add(new THREE.AmbientLight(0x444444));
+    const light = new THREE.DirectionalLight(0xffffff, 0.8);
+    light.position.set(0, 100, 100);
+    scene.add(light);
+
+    // Starfield Background (500 optimized points)
+    const starsGeometry = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(500 * 3);
+    for (let i = 0; i < 500 * 3; i++) {
+      starPositions[i] = (Math.random() - 0.5) * 1500;
+    }
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starsMaterial = new THREE.PointsMaterial({ color: 0x475569, size: 0.8 });
+    scene.add(new THREE.Points(starsGeometry, starsMaterial));
+  }
+
+  function flyToNode(node) {
+    const distance = 80;
+    const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+    
+    graph.cameraPosition(
+      { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+      { x: node.x, y: node.y, z: node.z },
+      1500
+    );
+
+    showHUD(node);
+  }
+
+  function showHUD(node) {
+    const hud = document.getElementById("hud-panel");
+    hud.classList.add("hud-active");
+
+    const warningsHtml = (node.warnings && node.warnings.length > 0) 
+      ? `<div class="mt-3">
+          <div class="hud-section-title text-warning"><i class="bi bi-exclamation-triangle"></i> Advertencias (${node.warnings.length})</div>
+          <ul class="fs-8 ps-3 text-warning-emphasis">
+            ${node.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('')}
+          </ul>
+         </div>`
+      : '';
+
+    hud.innerHTML = `
+      <div class="hud-header">
+        <h3>${escapeHtml(node.label)}</h3>
+        <button class="hud-close-btn" onclick="closeHUD()">✕</button>
+      </div>
+      <div class="hud-body">
+        <div class="hud-section-title">Datos del Dispositivo</div>
+        <div class="hud-item"><span>IP Gestión</span><code>${node.ip}</code></div>
+        <div class="hud-item"><span>Modelo</span><code>${node.model || 'No detectado'}</code></div>
+        <div class="hud-item"><span>Firmware</span><code class="text-secondary">${node.firmware || 'No detectado'}</code></div>
+        <div class="hud-item"><span>Ubicación</span><span>${node.location || 'Sin asignar'}</span></div>
+        <div class="hud-item"><span>Uptime</span><span>${node.uptime || 'N/A'}</span></div>
+        
+        <div class="hud-section-title mt-3">Métricas de Topología</div>
+        <div class="hud-item"><span>Puertos Totales</span><span>${node.port_count}</span></div>
+        <div class="hud-item"><span>Puertos Trunk</span><span>${node.trunk_count}</span></div>
+        <div class="hud-item"><span>Enlaces Vecinos</span><span>${node.link_count}</span></div>
+        
+        <div class="hud-section-title mt-3">VLANs Configuradas</div>
+        <div class="hud-vlans-container">
+          ${(node.vlans || []).map(v => `<span class="hud-vlan-badge">${v}</span>`).join('') || '<span class="text-muted fs-8">Ninguna</span>'}
+        </div>
+
+        ${warningsHtml}
+
+        <div class="mt-4">
+          <a href="/switches/${node.id}" class="btn btn-sm btn-aws-primary w-100 text-center text-white py-2 text-decoration-none">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Ver Detalle Completo
+          </a>
+        </div>
+      </div>
+    `;
+  }
+
+  function closeHUD() {
+    document.getElementById("hud-panel").classList.remove("hud-active");
+  }
+
+  function searchAndFly() {
+    const query = document.getElementById("searchNode").value.toLowerCase().trim();
+    if (!query) return;
+
+    const matchedNode = backendNodes.find(n => 
+      n.label.toLowerCase().includes(query) || 
+      n.ip.includes(query)
+    );
+
+    if (matchedNode) {
+      flyToNode(matchedNode);
+    }
+  }
+
+  function toggleParticles() {
+    particlesActive = !particlesActive;
+    graph.linkDirectionalParticles(link => particlesActive ? 3 : 0);
+    const btn = document.getElementById("btn-toggle-particles");
+    btn.innerHTML = particlesActive ? '<i class="bi bi-speedometer"></i> Tráfico: ON' : '<i class="bi bi-speedometer2"></i> Tráfico: OFF';
+    btn.className = particlesActive ? 'btn-aws-secondary text-decoration-none border-0' : 'btn-aws-secondary text-decoration-none border-0 opacity-50';
+  }
+
+  function resetCamera() {
+    graph.cameraPosition({ x: 0, y: 0, z: 280 }, { x: 0, y: 0, z: 0 }, 1000);
+  }
+
+  function toggleManualLinkMode() {
+    isManualLinkMode = !isManualLinkMode;
+    const btn = document.getElementById("btn-manual-link-mode");
+    const statusText = document.getElementById("hud-status-text");
+    
+    if (isManualLinkMode) {
+      btn.className = "btn btn-xs btn-purple w-100 fs-8 py-1 text-white";
+      btn.style.backgroundColor = "#a855f7";
+      btn.innerHTML = "<i class='bi bi-node-plus'></i> Selecciona Switch Origen...";
+      statusText.innerHTML = "<i class='bi bi-info-circle-fill text-warning'></i> Selecciona el primer switch de la conexión.";
+    } else {
+      btn.className = "btn btn-xs btn-outline-info w-100 fs-8 py-1";
+      btn.style.backgroundColor = "transparent";
+      btn.innerHTML = "<i class='bi bi-link-45deg'></i> Enlace Manual: OFF";
+      statusText.innerHTML = "<i class='bi bi-info-circle'></i> Haz clic en un switch para inspeccionarlo.";
+      manualLinkSource = null;
+    }
+  }
+
+  function handleManualLinkSelection(node) {
+    const statusText = document.getElementById("hud-status-text");
+    const btn = document.getElementById("btn-manual-link-mode");
+
+    if (!manualLinkSource) {
+      manualLinkSource = node;
+      btn.innerHTML = `<i class='bi bi-node-plus-fill'></i> Origen: ${node.label}`;
+      statusText.innerHTML = `<i class='bi bi-info-circle-fill text-warning'></i> Ahora selecciona el switch de destino para conectar a ${node.label}.`;
+    } else {
+      if (manualLinkSource.id === node.id) {
+        showToast("No puedes crear un enlace de un switch consigo mismo.", "danger");
+        toggleManualLinkMode();
+        return;
+      }
+
+      // Configure Modal labels
+      document.getElementById("link-src-name").innerText = manualLinkSource.label;
+      document.getElementById("link-tgt-name").innerText = node.label;
+      document.getElementById("lbl-port-src").innerText = `Puerto en ${manualLinkSource.label}`;
+      document.getElementById("lbl-port-tgt").innerText = `Puerto en ${node.label}`;
+
+      const linkModal = new bootstrap.Modal(document.getElementById('linkModal'));
+      
+      // Confirm logic
+      document.getElementById("btn-confirm-link").onclick = () => {
+        const portSrc = document.getElementById("port-src").value.trim();
+        const portTgt = document.getElementById("port-tgt").value.trim();
+
+        if (!portSrc || !portTgt) {
+          alert("Debes indicar los puertos en ambos equipos.");
+          return;
+        }
+
+        // Add to manual link memory
+        manualLinks.push({
+          source: manualLinkSource.id,
+          target: node.id,
+          source_port: portSrc,
+          target_port: portTgt
+        });
+
+        // Add dynamically to local graph
+        const currentData = graph.graphData();
+        graph.graphData({
+          nodes: currentData.nodes,
+          links: [
+            ...currentData.links,
+            {
+              source: manualLinkSource.id,
+              target: node.id,
+              source_port: portSrc,
+              target_port: portTgt,
+              label: `${portSrc} <-> ${portTgt}`,
+              link_type: 'manual'
+            }
+          ]
+        });
+
+        linkModal.hide();
+        showToast(`Enlace manual creado exitosamente entre ${manualLinkSource.label} y ${node.label}.`, "success");
+        
+        // Clean mode
+        toggleManualLinkMode();
+      };
+
+      linkModal.show();
+    }
+  }
+
+  function saveManualLinks() {
+    const btn = document.getElementById("btn-save");
+    btn.disabled = true;
+    
+    // Get current positions to save
+    const currentNodes = graph.graphData().nodes;
+    const positions = {};
+    currentNodes.forEach(n => {
+      positions[n.id] = { x: n.x, y: n.y };
+    });
+
+    const payload = {
+      positions: positions,
+      background_url: "",
+      manual_links: manualLinks
+    };
+
+    fetch("/api/topology/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(res => {
+      if (res.ok) {
+        showToast("Distribución y enlaces manuales guardados correctamente en topology_state.json", "success");
+      } else {
+        throw new Error();
+      }
+    })
+    .catch(() => {
+      showToast("Error al guardar la topología en el servidor.", "danger");
+    })
+    .finally(() => {
+      btn.disabled = false;
+    });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function showToast(message, type = "success") {
+    const container = document.body;
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} border-0 shadow-lg position-fixed bottom-0 end-0 m-3 p-3 text-white`;
+    toast.style.zIndex = "9999";
+    toast.style.backgroundColor = type === 'success' ? '#1d8102' : '#d13212';
+    toast.innerHTML = `<div class="d-flex align-items-center gap-2"><i class="bi ${type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}"></i><span>${message}</span></div>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  }
 </script>
 {% endblock %}

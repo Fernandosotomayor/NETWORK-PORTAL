@@ -90,6 +90,51 @@
       </div>
     </div>
   </div>
+
+  <div class="aws-panel mt-4">
+    <div class="aws-panel-header">
+      <h2>Estado de Respaldo en Oxidized</h2>
+    </div>
+    <div class="aws-panel-body">
+      <div class="d-flex flex-wrap align-items-center gap-4">
+        {% if oxidized_status %}
+          <div class="d-flex align-items-center gap-2">
+            {% if oxidized_status.status == 'success' %}
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 px-3 py-2 fs-6">
+                <i class="bi bi-check-circle-fill me-1"></i> Respaldo Exitoso
+              </span>
+            {% elif oxidized_status.status == 'no_connection' or oxidized_status.status == 'timeout' %}
+              <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-20 px-3 py-2 fs-6">
+                <i class="bi bi-wifi-off me-1"></i> Sin Conexión
+              </span>
+            {% elif oxidized_status.status == 'error' %}
+              <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-20 px-3 py-2 fs-6">
+                <i class="bi bi-exclamation-octagon-fill me-1"></i> Error en Oxidized
+              </span>
+            {% else %}
+              <span class="badge bg-secondary bg-opacity-10 text-warning border border-secondary border-opacity-20 px-3 py-2 fs-6">
+                <i class="bi bi-question-circle-fill me-1"></i> {{ oxidized_status.status }}
+              </span>
+            {% endif %}
+          </div>
+          <div class="flex-grow-1">
+            <div class="fs-7 text-secondary">
+              <strong>Último intento:</strong> {{ oxidized_status.mtime or 'Desconocido' }}
+            </div>
+            {% if oxidized_status.message %}
+              <div class="mt-2">
+                <code class="text-danger bg-danger-8 px-2 py-1 rounded fs-8 text-break">{{ oxidized_status.message }}</code>
+              </div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="alert alert-secondary border-0 mb-0 w-100 fs-7">
+            <i class="bi bi-cloud-slash me-2"></i> No se encontraron datos de estado del switch en el servicio Oxidized en ejecución.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 2. Ports Tab -->

@@ -50,3 +50,23 @@ class ApiTests(unittest.TestCase):
         data = response.json()
         self.assertEqual(data["status"], "success")
         self.assertIn("last_updated", data)
+
+    def test_api_oxidized_status(self) -> None:
+        response = self.client.get("/api/oxidized/status")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("oxidized_connected", data)
+        self.assertIn("last_sync", data)
+        self.assertIn("nodes", data)
+        self.assertGreater(len(data["nodes"]), 0)
+        first_node = data["nodes"][0]
+        self.assertIn("hostname", first_node)
+        self.assertIn("ip", first_node)
+        self.assertIn("status", first_node)
+
+    def test_oxidized_html_page(self) -> None:
+        response = self.client.get("/oxidized")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.headers["content-type"])
+        self.assertIn(b"Estado de Respaldos", response.content)
+

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
@@ -71,6 +71,14 @@ class NetworkNode:
     ip: str
     model: str
     group: str = "switch"
+    firmware: str = ""
+    location: str = ""
+    uptime: str = ""
+    vlans: list[int] = field(default_factory=list)
+    port_count: int = 0
+    trunk_count: int = 0
+    link_count: int = 0
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -82,6 +90,7 @@ class NetworkLink:
     source_port: str | None
     target_port: str | None
     label: str
+    link_type: str = "auto"  # "auto" | "manual"
 
 
 @dataclass(slots=True)
@@ -102,6 +111,51 @@ def slugify_desc(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
 
+# Regex patterns to extract switch target name from port descriptions
+LINK_PATTERNS = [
+    r"(?i)trunk[_\s]*(?:to|from)[_\s]*(?:sw|switch)[_\s]*(.+)",
+    r"(?i)trunk[_\s]*sw[_\s]*(.+)",
+    r"(?i)uplink[_\s]*(?:to|from)[_\s]*(?:sw|switch)?[_\s]*(.+)",
+    r"(?i)(?:from|to)[_\s]*(?:sw|switch)[_\s]*(.+)",
+    r"(?i)enlace[_\s]*(?:a|de|to|from)[_\s]*(?:sw|switch)?[_\s]*(.+)",
+]
+
+# Patterns that look like trunks but aren't switch-to-switch links
+FALSE_POSITIVE_PATTERNS = [
+    r"(?i)trunk[_\s]*\d+[UT]",           # "Trunk_10U_50T" (VLAN config hints)
+    r"(?i)trunk[_\s]*vlan",              # "Trunk_VLAN1_only"
+    r"(?i)trunk[_\s]*wifi",              # "Trunk_WiFi_AP"
+    r"(?i)trunk[_\s]*generico",          # "Trunk_Generico"
+    r"(?i)access[_\s]*vlan",             # "Access_VLAN10"
+    r"(?i)disponible",                   # "Disponible_VLAN1"
+]
+
+
+def fuzzy_match_switch(extracted_name: str, switch_slugs: list[str]) -> str | None:
+    """Match extracted target name against known switch slugs using fuzzy heuristics."""
+    slug = slugify_desc(extracted_name)
+    if not slug:
+        return None
+    
+    # 1. Exact match
+    if slug in switch_slugs:
+        return slug
+    
+    # 2. Substring containment (either way)
+    for known_slug in switch_slugs:
+        if known_slug in slug or slug in known_slug:
+            return known_slug
+            
+    # 3. Dash-insensitive matching
+    slug_no_dash = slug.replace("-", "")
+    for known_slug in switch_slugs:
+        known_no_dash = known_slug.replace("-", "")
+        if known_no_dash in slug_no_dash or slug_no_dash in known_no_dash:
+            return known_slug
+            
+    return None
+
+
 def is_connection_match(description: str, target_slug: str) -> bool:
     """Check if a port description matches a target switch slug using word boundaries."""
     desc_clean = slugify_desc(description)
@@ -113,7 +167,7 @@ def is_connection_match(description: str, target_slug: str) -> bool:
     if padded_target in padded_desc:
         return True
 
-    # Check without dashes for variations (e.g. porteriacentral matching porteria-central)
+    # Check without dashes for variations
     target_no_dash = target_slug.replace("-", "")
     padded_target_no_dash = f"-{target_no_dash}-"
     if padded_target_no_dash in padded_desc:
@@ -124,20 +178,13 @@ def is_connection_match(description: str, target_slug: str) -> bool:
 
 def generate_topology(switches: list[SwitchRecord]) -> TopologyData:
     """Deduce network nodes and interconnecting links from switch records."""
-    nodes: list[NetworkNode] = []
-    # Map from slug to switch record for quick lookups
+    # 1. Build slugs list
+    switch_slugs = [s.slug for s in switches]
     switch_map = {s.slug: s for s in switches}
 
-    for switch in switches:
-        nodes.append(
-            NetworkNode(
-                id=switch.slug,
-                label=switch.hostname,
-                ip=switch.ip,
-                model=switch.model,
-                group="switch",
-            )
-        )
+    # 2. Compile patterns
+    compiled_patterns = [re.compile(p) for p in LINK_PATTERNS]
+    compiled_false_positives = [re.compile(p) for p in FALSE_POSITIVE_PATTERNS]
 
     # Intermediate link storage: key=(min_slug, max_slug) -> dict
     links_map: dict[tuple[str, str], dict[str, Any]] = {}
@@ -148,30 +195,47 @@ def generate_topology(switches: list[SwitchRecord]) -> TopologyData:
             if not desc:
                 continue
 
-            # Look for matches with other switches
-            for other_switch in switches:
-                if other_switch.slug == switch.slug:
-                    continue
+            # Skip false positives
+            if any(pat.search(desc) for pat in compiled_false_positives):
+                continue
 
-                if is_connection_match(desc, other_switch.slug):
-                    # Found a connection
-                    min_slug = min(switch.slug, other_switch.slug)
-                    max_slug = max(switch.slug, other_switch.slug)
-                    key = (min_slug, max_slug)
+            # Try regex matching
+            target_slug = None
+            for pat in compiled_patterns:
+                match = pat.search(desc)
+                if match:
+                    extracted = match.group(1).strip().rstrip("_")
+                    target_slug = fuzzy_match_switch(extracted, switch_slugs)
+                    if target_slug:
+                        break
 
-                    if key not in links_map:
-                        links_map[key] = {
-                            "source": min_slug,
-                            "target": max_slug,
-                            "source_port": None,
-                            "target_port": None,
-                        }
+            # Fallback to original substring matching if regex didn't resolve
+            if not target_slug:
+                for other_slug in switch_slugs:
+                    if other_slug != switch.slug and is_connection_match(desc, other_slug):
+                        target_slug = other_slug
+                        break
 
-                    # Determine if this port belongs to the source (min_slug) or target (max_slug)
-                    if switch.slug == min_slug:
-                        links_map[key]["source_port"] = port.get("name")
-                    else:
-                        links_map[key]["target_port"] = port.get("name")
+            if target_slug and target_slug != switch.slug:
+                min_slug = min(switch.slug, target_slug)
+                max_slug = max(switch.slug, target_slug)
+                key = (min_slug, max_slug)
+
+                if key not in links_map:
+                    links_map[key] = {
+                        "source": min_slug,
+                        "target": max_slug,
+                        "source_port": None,
+                        "target_port": None,
+                        "link_type": "auto"
+                    }
+
+                # Associate ports correctly
+                port_name = port.get("name")
+                if switch.slug == min_slug:
+                    links_map[key]["source_port"] = port_name
+                else:
+                    links_map[key]["target_port"] = port_name
 
     # Build final link list
     links: list[NetworkLink] = []
@@ -179,7 +243,7 @@ def generate_topology(switches: list[SwitchRecord]) -> TopologyData:
         s_port = data["source_port"]
         t_port = data["target_port"]
 
-        # Format label (e.g. "gi1 <-> gi2" or "gi1 -> ?")
+        # Format label
         if s_port and t_port:
             label = f"{s_port} <-> {t_port}"
         elif s_port:
@@ -194,6 +258,41 @@ def generate_topology(switches: list[SwitchRecord]) -> TopologyData:
                 source_port=s_port,
                 target_port=t_port,
                 label=label,
+                link_type=data["link_type"]
+            )
+        )
+
+    # Build nodes list with full metadata
+    nodes: list[NetworkNode] = []
+    link_counts = {slug: 0 for slug in switch_slugs}
+
+    for link in links:
+        if link.source in link_counts:
+            link_counts[link.source] += 1
+        if link.target in link_counts:
+            link_counts[link.target] += 1
+
+    for switch in switches:
+        port_count = len(switch.ports)
+        trunk_count = sum(
+            1 for p in switch.ports
+            if any(term in str(p.get("description") or "").lower() for term in ["trunk", "uplink", "enlace"])
+        )
+        nodes.append(
+            NetworkNode(
+                id=switch.slug,
+                label=switch.hostname,
+                ip=switch.ip,
+                model=switch.model,
+                group="switch",
+                firmware=switch.firmware,
+                location=switch.location,
+                uptime=switch.uptime,
+                vlans=switch.vlans,
+                port_count=port_count,
+                trunk_count=trunk_count,
+                link_count=link_counts.get(switch.slug, 0),
+                warnings=switch.warnings
             )
         )
 
