@@ -20,6 +20,13 @@ class PlanetCiscoLikeParser(BaseParser):
         for line in lines:
             stripped = line.strip()
 
+            # Cisco SMB Firmware and Model detection
+            if match := re.match(r"^!\s+\d+\s+([\d\.]+)\s+[\d\.]+\s+V\d+", stripped, flags=re.IGNORECASE):
+                switch.firmware = match.group(1)
+                if not switch.model:
+                    switch.model = "Cisco SMB"
+                continue
+
             if match := re.match(r"^(.+?)#\s+show running-config$", stripped, flags=re.IGNORECASE):
                 prompt_name = match.group(1).strip()
                 if not switch.model and re.search(r"\d", prompt_name):
