@@ -521,6 +521,14 @@ def upload_switch_backup(
         except Exception as git_err:
             LOGGER.error(f"Git commit failed for manual upload: {git_err}")
             
+        # Delete VLANs cache to force regeneration
+        cache_path = settings.BASE_DIR / "data" / "vlans_cache.json"
+        if cache_path.exists():
+            try:
+                cache_path.unlink()
+            except Exception:
+                pass
+                
         return {
             "status": "success",
             "message": "Configuration uploaded and normalized successfully",

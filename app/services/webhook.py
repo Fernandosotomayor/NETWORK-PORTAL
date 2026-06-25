@@ -143,6 +143,16 @@ def run_oxidized_sync() -> dict[str, Any]:
             LOGGER.exception(f"Failed to parse synchronized backup: {cfg_path}")
             
     LOGGER.info(f"Sync complete. Parsed {parsed_count} switches with {errors_count} errors.")
+    
+    # Delete VLANs cache to force regeneration on next load
+    cache_path = settings.BASE_DIR / "data" / "vlans_cache.json"
+    if cache_path.exists():
+        try:
+            cache_path.unlink()
+            LOGGER.info("Deleted VLANs cache to trigger update on next load.")
+        except Exception:
+            LOGGER.exception("Failed to delete VLANs cache file")
+
     return {
         "status": "success",
         "copied": len(copied_files),
