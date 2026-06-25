@@ -29,6 +29,8 @@
             <th>Modelo</th>
             <th>Firmware</th>
             <th>Ubicación</th>
+            <th>Dirección MAC</th>
+            <th>Uptime / Activo</th>
             <th>Estado de Conexión</th>
           </tr>
         </thead>
@@ -48,6 +50,14 @@
             <td class="text-secondary">{{ switch.model or '-' }}</td>
             <td class="text-secondary font-monospace fs-7">{{ switch.firmware or '-' }}</td>
             <td class="text-secondary">{{ switch.location or '-' }}</td>
+            <td class="text-secondary font-monospace fs-7 text-uppercase" id="mac-{{ switch.ip }}">{{ switch.mac or '-' }}</td>
+            <td class="text-secondary fs-7" id="uptime-{{ switch.ip }}">
+              {% if switch.uptime %}
+                {{ switch.uptime | replace('days', 'días') | replace('day', 'día') | replace('hours', 'horas') | replace('hour', 'hora') | replace('mins', 'minutos') }}
+              {% else %}
+                Consultando...
+              {% endif %}
+            </td>
             <td>
               <div class="aws-status-indicator">
                 <span class="aws-status-dot unknown" id="status-dot-{{ switch.ip }}"></span>
@@ -83,16 +93,38 @@
           dot.className = "aws-status-dot online";
           text.innerText = "Online";
           text.className = "fs-7 text-success fw-semibold";
+          
+          // Update dynamic Uptime & MAC
+          const uptimeCell = document.getElementById(`uptime-${ip}`);
+          if (uptimeCell && data.uptime) {
+            uptimeCell.innerText = data.uptime;
+          }
+          const macCell = document.getElementById(`mac-${ip}`);
+          if (macCell && data.mac) {
+            macCell.innerText = data.mac;
+          }
         } else {
           dot.className = "aws-status-dot offline";
           text.innerText = "Offline";
           text.className = "fs-7 text-danger fw-semibold";
+          
+          const uptimeCell = document.getElementById(`uptime-${ip}`);
+          if (uptimeCell) {
+            uptimeCell.innerText = "Offline";
+            uptimeCell.className = "text-danger fs-7 fw-semibold";
+          }
         }
       })
       .catch(() => {
         dot.className = "aws-status-dot offline";
         text.innerText = "Offline (Error)";
         text.className = "fs-7 text-danger fw-semibold";
+        
+        const uptimeCell = document.getElementById(`uptime-${ip}`);
+        if (uptimeCell) {
+          uptimeCell.innerText = "Offline";
+          uptimeCell.className = "text-danger fs-7 fw-semibold";
+        }
       });
     });
 

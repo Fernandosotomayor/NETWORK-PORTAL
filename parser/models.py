@@ -71,6 +71,8 @@ class Switch:
     model: str = ""
     firmware: str = ""
     location: str = ""
+    mac: str = ""
+    uptime: str = ""
     vlans: list[Vlan] = field(default_factory=list)
     ports: list[Port] = field(default_factory=list)
     metadata: BackupMetadata | None = None
@@ -85,7 +87,10 @@ class Switch:
             "model": self.model,
             "firmware": self.firmware,
             "location": self.location,
+            "mac": self.mac,
+            "uptime": self.uptime,
             "vlans": [vlan.id for vlan in sorted(self.vlans, key=lambda item: item.id)],
+            "vlan_names": {str(vlan.id): vlan.name for vlan in self.vlans if vlan.name},
             "ports": [port.to_dict() for port in self.ports],
         }
         if include_metadata:

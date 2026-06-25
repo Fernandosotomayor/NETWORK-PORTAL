@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}VLANs Dashboard | STLi Network Portal{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h1 class="h3 mb-1 fw-bold text-dark">Dashboard de VLANs</h1>
+  <p class="text-secondary mb-0">Auditoría, segmentación y mapeo de VLANs en toda la red.</p>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="aws-panel h-100">
+      <div class="aws-panel-body p-3">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <span class="fs-7 text-secondary fw-semibold uppercase tracking-wider">Total VLANs</span>
+            <h3 class="h2 mb-0 fw-bold mt-1 text-dark">{{ total_vlans }}</h3>
+          </div>
+          <div class="bg-primary-subtle text-primary p-2 rounded">
+            <i class="bi bi-tag-fill fs-4"></i>
+          </div>
+        </div>
+        <p class="text-secondary fs-7 mb-0 mt-2">VLANs únicas configuradas en switches activos.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="aws-panel h-100">
+      <div class="aws-panel-body p-3">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <span class="fs-7 text-secondary fw-semibold uppercase tracking-wider">VLAN Más Usada</span>
+            <h3 class="h2 mb-0 fw-bold mt-1 text-dark">
+              {% if most_used_vlan %}
+                VLAN {{ most_used_vlan.id }}
+              {% else %}
+                -
+              {% endif %}
+            </h3>
+          </div>
+          <div class="bg-success-subtle text-success p-2 rounded">
+            <i class="bi bi-diagram-3-fill fs-4"></i>
+          </div>
+        </div>
+        <p class="text-secondary fs-7 mb-0 mt-2">
+          {% if most_used_vlan %}
+            {{ most_used_vlan.name }} con <strong>{{ most_used_vlan.ports_count }}</strong> puertos asociados.
+          {% else %}
+            Sin datos.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- VLANs Table Panel -->
+  <div class="col-12 col-lg-8">
+    <div class="aws-panel">
+      <div class="aws-panel-header flex-column flex-sm-row gap-2">
+        <div>
+          <h2>Inventario de VLANs y Segmentación</h2>
+        </div>
+        <div class="w-100 w-sm-auto">
+          <input type="text" id="vlanFilter" class="form-control form-control-sm" placeholder="Filtrar por VLAN, Nombre o Puerto..." style="min-width: 250px;">
+        </div>
+      </div>
+      <div class="aws-panel-body p-0">
+        <div class="table-aws-container">
+          <table class="table-aws table-sortable" id="vlansTable">
+            <thead>
+              <tr>
+                <th style="width: 50px;" class="no-sort"></th>
+                <th style="width: 100px;">VLAN ID</th>
+                <th>Nombre Común / Identificación</th>
+                <th class="text-center">Puertos Ocupados</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if not vlans %}
+              <tr>
+                <td colspan="4" class="text-center py-4 text-secondary">
+                  <i class="bi bi-info-circle me-1"></i>No se han detectado VLANs en las configuraciones.
+                </td>
+              </tr>
+              {% else %}
+                {% for vlan in vlans %}
+                <tr class="vlan-row-header" data-vlan-id="{{ vlan.id }}">
+                  <td>
+                    <button class="btn btn-link btn-sm p-0 text-dark btn-expand-vlan" onclick="toggleVlanDetails({{ vlan.id }})">
+                      <i class="bi bi-chevron-right" id="arrow-{{ vlan.id }}"></i>
+                    </button>
+                  </td>
+                  <td class="fw-bold font-monospace text-primary">VLAN {{ vlan.id }}</td>
+                  <td class="fw-semibold">{{ vlan.name }}</td>
+                  <td class="text-center">
+                    <span class="badge text-bg-light border fw-bold fs-7">{{ vlan.ports_count }}</span>
+                  </td>
+                </tr>
+                <!-- Expandable Details Row -->
+                <tr class="vlan-details-row d-none" id="details-{{ vlan.id }}">
+                  <td></td>
+                  <td colspan="3" class="bg-light p-3 border-top border-bottom">
+                    <h4 class="fs-7 fw-bold mb-2 text-dark uppercase"><i class="bi bi-connector me-1 text-primary"></i>Desglose de Puertos y Switches en VLAN {{ vlan.id }}:</h4>
+                    {% if not vlan.ports %}
+                      <p class="text-secondary fs-7 mb-0">No hay puertos de switches configurados con esta VLAN (podría estar declarada pero no asignada).</p>
+                    {% else %}
+                      <div class="table-responsive rounded bg-white border">
+                        <table class="table table-sm table-hover mb-0 fs-7">
+                          <thead class="table-light">
+                            <tr>
+                              <th>Switch Hostname</th>
+                              <th>Puerto</th>
+                              <th>Modo</th>
+                              <th>Descripción de Puerto</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for assignment in vlan.ports %}
+                            <tr>
+                              <td>
+                                <a href="{{ url_for('switch_detail', slug=assignment.switch_slug) }}" class="fw-semibold text-decoration-none">
+                                  {{ assignment.switch_hostname }}
+                                </a>
+                              </td>
+                              <td class="font-monospace fw-bold text-secondary">{{ assignment.port_name }}</td>
+                              <td>
+                                <span class="aws-badge-pill {% if assignment.port_mode == 'trunk' %}trunk{% elif assignment.port_mode == 'access' %}access{% elif assignment.port_mode == 'hybrid' %}hybrid{% else %}other{% endif %}">
+                                  {{ assignment.port_mode }}
+                                </span>
+                              </td>
+                              <td class="text-secondary">{{ assignment.description or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Changes Sidebar -->
+  <div class="col-12 col-lg-4">
+    <div class="aws-panel h-100">
+      <div class="aws-panel-header">
+        <h2>Historial de Cambios Recientes (VLANs)</h2>
+      </div>
+      <div class="aws-panel-body p-3">
+        <p class="text-secondary fs-7 mb-3">Últimas modificaciones registradas en Git asociadas con configuraciones de VLANs.</p>
+        
+        {% if not vlan_changes %}
+        <div class="text-center py-4 text-secondary border rounded bg-light">
+          <i class="bi bi-clock-history fs-3 opacity-25 d-block mb-1"></i>
+          <span class="fs-7">No se detectaron cambios recientes específicos de VLANs.</span>
+        </div>
+        {% else %}
+        <div class="d-flex flex-column gap-3">
+          {% for change in vlan_changes %}
+          <div class="p-2 border rounded bg-white shadow-xs">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fs-8 text-secondary font-monospace">{{ change.date | truncate(10, True, '') }}</span>
+              <a class="fs-8 fw-semibold text-decoration-none font-monospace" href="{{ url_for('switch_diff', commit_hash=change.commit_hash) }}?filename={{ change.filename }}">
+                Diff <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+            <p class="mb-1 fw-bold fs-7 text-dark">{{ change.filename.split('_')[0] }}</p>
+            <p class="mb-0 text-secondary fs-8 font-monospace text-truncate" style="max-width: 100%;">{{ change.message }}</p>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Accordion Expand/Collapse Logic
+  function toggleVlanDetails(vlanId) {
+    const detailsRow = document.getElementById(`details-${vlanId}`);
+    const arrow = document.getElementById(`arrow-${vlanId}`);
+    
+    if (detailsRow.classList.contains("d-none")) {
+      detailsRow.classList.remove("d-none");
+      arrow.className = "bi bi-chevron-down text-primary";
+    } else {
+      detailsRow.classList.add("d-none");
+      arrow.className = "bi bi-chevron-right";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Dynamic real-time filter logic for VLANs Table
+    const vlanFilter = document.getElementById("vlanFilter");
+    vlanFilter.addEventListener("input", (e) => {
+      const term = e.target.value.toLowerCase();
+      const headers = document.querySelectorAll(".vlan-row-header");
+      
+      headers.forEach(header => {
+        const vlanId = header.getAttribute("data-vlan-id");
+        const detailsRow = document.getElementById(`details-${vlanId}`);
+        const headerText = header.textContent.toLowerCase();
+        
+        // Check details text as well
+        let detailsText = "";
+        if (detailsRow) {
+          detailsText = detailsRow.textContent.toLowerCase();
+        }
+        
+        if (headerText.includes(term) || detailsText.includes(term)) {
+          header.style.display = "";
+        } else {
+          header.style.display = "none";
+          // Close details when hidden
+          if (detailsRow) {
+            detailsRow.classList.add("d-none");
+            const arrow = document.getElementById(`arrow-${vlanId}`);
+            if (arrow) arrow.className = "bi bi-chevron-right";
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

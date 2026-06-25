@@ -24,6 +24,39 @@ class BaseParser(ABC):
         lines = text.splitlines()
         switch = self._parse_lines(lines)
         switch.metadata = BackupMetadata.from_path(source_path, self.family, len(lines))
+        
+        # Extract MAC address from entire text (e.g. from MST configuration name or comments)
+        mac_match = re.search(r'(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}', text)
+        if mac_match:
+            switch.mac = mac_match.group(0).upper().replace('-', ':')
+        else:
+            switch.mac = ""
+
+        # Extract Uptime from system config comments if present
+        uptime_match = re.search(r'System Up Time:\s*(.+)$', text, re.IGNORECASE | re.MULTILINE)
+        if uptime_match:
+            switch.uptime = uptime_match.group(1).strip()
+        else:
+            switch.uptime = ""
+
+        # Extract VLAN names from text config
+        vlan_names = {}
+        current_vlan_id = None
+        for line in lines:
+            stripped = line.strip()
+            if match := re.match(r"^vlan\s+(\d+)$", stripped, flags=re.IGNORECASE):
+                current_vlan_id = int(match.group(1))
+            elif current_vlan_id is not None and (line.startswith(" ") or line.startswith("\t") or stripped.startswith("name")):
+                if match_name := re.match(r"^name\s+(.+)$", stripped, flags=re.IGNORECASE):
+                    vlan_names[current_vlan_id] = self.clean_quoted(match_name.group(1))
+            else:
+                if not (stripped.startswith("name") or stripped.startswith("vlan")):
+                    current_vlan_id = None
+
+        for vlan in switch.vlans:
+            if vlan.id in vlan_names:
+                vlan.name = vlan_names[vlan.id]
+
         self._validate(switch)
         return switch
 

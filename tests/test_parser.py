@@ -77,7 +77,7 @@ class ParseFileTests(unittest.TestCase):
                 data = parse_file(cfg_path)
                 self.assertEqual(
                     sorted(data.keys()),
-                    ["firmware", "hostname", "ip", "location", "model", "ports", "vlans"],
+                    ["firmware", "hostname", "ip", "location", "mac", "model", "ports", "uptime", "vlan_names", "vlans"],
                 )
                 self.assertTrue(data["hostname"])
                 self.assertTrue(data["ip"])

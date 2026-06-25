@@ -627,3 +627,75 @@ a:hover {
 /* Helpers */
 .fs-7 { font-size: 0.75rem !important; }
 .font-monospace { font-family: Consolas, Monaco, monospace !important; }
+
+/* Autocomplete predictive search suggestions dropdown */
+.aws-header-search {
+  position: relative;
+}
+
+.search-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid var(--aws-border-dark);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: var(--shadow-md);
+  z-index: 1090;
+  max-height: 420px;
+  overflow-y: auto;
+  margin-top: 1px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.suggestions-section {
+  border-bottom: 1px solid var(--aws-border-color);
+}
+
+.suggestions-section:last-child {
+  border-bottom: none;
+}
+
+.suggestions-section .section-title {
+  background-color: var(--stli-gray-light);
+  color: var(--aws-text-secondary);
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.suggestion-item {
+  display: block;
+  padding: 0.6rem 0.75rem;
+  color: var(--aws-text-primary);
+  text-decoration: none;
+  transition: background-color var(--transition-speed);
+}
+
+.suggestion-item:hover {
+  background-color: var(--stli-blue-light);
+  color: var(--stli-blue-hover);
+  text-decoration: none;
+}
+
+.suggestion-item-main {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.suggestion-item-sub {
+  font-size: 0.75rem;
+  color: var(--aws-text-secondary);
+  margin-top: 0.1rem;
+}
+
+.suggestions-no-results {
+  padding: 1rem;
+  text-align: center;
+  color: var(--aws-text-secondary);
+  font-size: 0.8rem;
+}

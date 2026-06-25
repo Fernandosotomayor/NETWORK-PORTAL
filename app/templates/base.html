@@ -25,9 +25,27 @@
       </div>
 
       <!-- Center Search Bar (AWS console style) -->
-      <form class="aws-header-search" action="{{ url_for('search') }}" method="get">
-        <input type="search" name="q" value="{{ query | default('') }}" placeholder="Buscar switches, VLANs, puertos..." aria-label="Search">
+      <form class="aws-header-search" id="headerSearchForm" action="{{ url_for('search') }}" method="get" autocomplete="off">
+        <input type="search" id="headerSearchInput" name="q" value="{{ query | default('') }}" placeholder="Buscar switches, VLANs, puertos..." aria-label="Search">
         <i class="bi bi-search"></i>
+        <!-- Predictive suggestions dropdown -->
+        <div class="search-suggestions-dropdown d-none" id="searchSuggestions">
+          <div class="suggestions-section d-none" id="section-switches">
+            <div class="section-title"><i class="bi bi-hdd me-1"></i> Switches</div>
+            <div class="section-items"></div>
+          </div>
+          <div class="suggestions-section d-none" id="section-vlans">
+            <div class="section-title"><i class="bi bi-tag-fill me-1"></i> VLANs</div>
+            <div class="section-items"></div>
+          </div>
+          <div class="suggestions-section d-none" id="section-ports">
+            <div class="section-title"><i class="bi bi-connector me-1"></i> Puertos</div>
+            <div class="section-items"></div>
+          </div>
+          <div class="suggestions-no-results d-none" id="suggestionsNoResults">
+            No se encontraron resultados para esta consulta
+          </div>
+        </div>
       </form>
 
       <!-- Right User Menu/Info -->
@@ -59,6 +77,12 @@
             <a class="aws-sidebar-link" href="{{ url_for('topology') }}">
               <i class="bi bi-diagram-3"></i>
               <span>Topología</span>
+            </a>
+          </li>
+          <li class="aws-sidebar-item {% if active_page == 'vlans' %}active{% endif %}">
+            <a class="aws-sidebar-link" href="/vlans">
+              <i class="bi bi-tag-fill"></i>
+              <span>VLANs</span>
             </a>
           </li>
           <li class="aws-sidebar-item {% if active_page == 'audit' %}active{% endif %}">
@@ -94,6 +118,8 @@
             <span class="text-dark fw-semibold">Inventario</span>
           {% elif active_page == 'topology' %}
             <span class="text-dark fw-semibold">Topología</span>
+          {% elif active_page == 'vlans' %}
+            <span class="text-dark fw-semibold">VLANs</span>
           {% elif active_page == 'audit' %}
             <span class="text-dark fw-semibold">Auditoría</span>
           {% elif active_page == 'changes' %}
@@ -206,6 +232,126 @@
             });
           });
         });
+      });
+    </script>
+
+    <!-- Predictive Autocomplete Search Script (Outlook Style) -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const searchInput = document.getElementById("headerSearchInput");
+        const suggestionsDropdown = document.getElementById("searchSuggestions");
+        const noResults = document.getElementById("suggestionsNoResults");
+        
+        const secSwitches = document.getElementById("section-switches");
+        const secVlans = document.getElementById("section-vlans");
+        const secPorts = document.getElementById("section-ports");
+        
+        let debounceTimer;
+        
+        if (searchInput && suggestionsDropdown) {
+          searchInput.addEventListener("input", () => {
+            clearTimeout(debounceTimer);
+            const query = searchInput.value.trim();
+            
+            if (query.length < 2) {
+              suggestionsDropdown.classList.add("d-none");
+              return;
+            }
+            
+            debounceTimer = setTimeout(() => {
+              fetch(`/api/search/suggest?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                  let hasAnyResults = false;
+                  
+                  // 1. Populate Switches
+                  const switchesItems = secSwitches.querySelector(".section-items");
+                  switchesItems.innerHTML = "";
+                  if (data.switches && data.switches.length > 0) {
+                    secSwitches.classList.remove("d-none");
+                    hasAnyResults = true;
+                    data.switches.forEach(item => {
+                      const a = document.createElement("a");
+                      a.className = "suggestion-item";
+                      a.href = `/switches/${item.slug}`;
+                      a.innerHTML = `
+                        <div class="suggestion-item-main"><i class="bi bi-hdd text-secondary me-1"></i>${item.hostname}</div>
+                        <div class="suggestion-item-sub">${item.ip} · ${item.model || 'Modelo desconocido'} · ${item.location || 'Sin ubicación'}</div>
+                      `;
+                      switchesItems.appendChild(a);
+                    });
+                  } else {
+                    secSwitches.classList.add("d-none");
+                  }
+                  
+                  // 2. Populate VLANs
+                  const vlansItems = secVlans.querySelector(".section-items");
+                  vlansItems.innerHTML = "";
+                  if (data.vlans && data.vlans.length > 0) {
+                    secVlans.classList.remove("d-none");
+                    hasAnyResults = true;
+                    data.vlans.forEach(item => {
+                      const a = document.createElement("a");
+                      a.className = "suggestion-item";
+                      a.href = `/vlans#vlan-${item.id}`;
+                      a.innerHTML = `
+                        <div class="suggestion-item-main"><i class="bi bi-tag-fill text-secondary me-1"></i>VLAN ${item.id} - ${item.name}</div>
+                        <div class="suggestion-item-sub">Asociada a ${item.switches_count} switch(es)</div>
+                      `;
+                      vlansItems.appendChild(a);
+                    });
+                  } else {
+                    secVlans.classList.add("d-none");
+                  }
+                  
+                  // 3. Populate Ports
+                  const portsItems = secPorts.querySelector(".section-items");
+                  portsItems.innerHTML = "";
+                  if (data.ports && data.ports.length > 0) {
+                    secPorts.classList.remove("d-none");
+                    hasAnyResults = true;
+                    data.ports.forEach(item => {
+                      const a = document.createElement("a");
+                      a.className = "suggestion-item";
+                      a.href = `/switches/${item.switch_slug}?tab=tab-ports`;
+                      a.innerHTML = `
+                        <div class="suggestion-item-main"><i class="bi bi-connector text-secondary me-1"></i>${item.switch_hostname} : ${item.port_name}</div>
+                        <div class="suggestion-item-sub">${item.mode || 'unknown'} mode · ${item.description || 'Sin descripción'}</div>
+                      `;
+                      portsItems.appendChild(a);
+                    });
+                  } else {
+                    secPorts.classList.add("d-none");
+                  }
+                  
+                  // Show dropdown and handle no results
+                  suggestionsDropdown.classList.remove("d-none");
+                  if (hasAnyResults) {
+                    noResults.classList.add("d-none");
+                  } else {
+                    noResults.classList.remove("d-none");
+                  }
+                })
+                .catch(err => {
+                  console.error("Error fetching suggestions:", err);
+                });
+            }, 250);
+          });
+          
+          // Close suggestions when clicking outside
+          document.addEventListener("click", (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
+              suggestionsDropdown.classList.add("d-none");
+            }
+          });
+          
+          // Show suggestions when clicking back inside
+          searchInput.addEventListener("click", () => {
+            if (searchInput.value.trim().length >= 2) {
+              suggestionsDropdown.classList.remove("d-none");
+            }
+          });
+        }
       });
     </script>
   </body>

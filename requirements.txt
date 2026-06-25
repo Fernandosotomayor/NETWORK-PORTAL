@@ -3,4 +3,5 @@ uvicorn[standard]
 jinja2
 pydantic-settings
 httpx
+python-multipart
 

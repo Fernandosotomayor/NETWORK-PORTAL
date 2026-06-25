@@ -21,7 +21,10 @@ class SwitchRecord:
     model: str
     firmware: str
     location: str
+    mac: str = ""
+    uptime: str = ""
     vlans: list[int] = field(default_factory=list)
+    vlan_names: dict[str, str] = field(default_factory=dict)
     ports: list[dict[str, Any]] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -38,7 +41,10 @@ class SwitchRecord:
             model=str(data.get("model") or ""),
             firmware=str(data.get("firmware") or ""),
             location=str(data.get("location") or ""),
+            mac=str(data.get("mac") or ""),
+            uptime=str(data.get("uptime") or ""),
             vlans=[int(vlan) for vlan in data.get("vlans", [])],
+            vlan_names=dict(data.get("vlan_names") or {}),
             ports=list(data.get("ports", [])),
             warnings=list(warnings or []),
         )
