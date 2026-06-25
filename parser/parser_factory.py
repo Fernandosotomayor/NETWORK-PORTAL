@@ -20,7 +20,7 @@ class ParserFactory:
     def from_text(text: str) -> BaseParser:
         if "SYSTEM CONFIG FILE ::= BEGIN" in text or "! System Description:" in text:
             return PlanetSystemConfigParser()
-        if "show running-config" in text and "hostname " in text:
+        if "hostname " in text:
             return PlanetCiscoLikeParser()
         raise UnsupportedBackupFormatError("unsupported Planet backup format")
 
