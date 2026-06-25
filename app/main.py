@@ -66,48 +66,88 @@ def inventory(
     )
 
 
-@app.get("/vlans", response_class=HTMLResponse)
-def vlans_dashboard(
-    request: Request,
-    repository: JsonInventoryRepository = Depends(get_repository),
-) -> HTMLResponse:
-    """Aggregated VLAN inventory dashboard."""
+def aggregate_vlans_data(repository: JsonInventoryRepository) -> dict[str, Any]:
+    """Perform O(S*P) aggregation of VLANs from switch records."""
     switches = repository.list_switches()
     vlans_map = {}
     
+    # 1. Initialize all VLANs defined on the switches
     for switch in switches:
         for vlan_id in switch.vlans:
             if vlan_id not in vlans_map:
                 vlans_map[vlan_id] = {
                     "id": vlan_id,
                     "names": set(),
-                    "ports": []
+                    "switches": {}
                 }
             
             vlan_name = switch.vlan_names.get(str(vlan_id)) or switch.vlan_names.get(vlan_id)
             if vlan_name:
                 vlans_map[vlan_id]["names"].add(vlan_name)
-                
-        for port in switch.ports:
-            for vlan_id in list(vlans_map.keys()):
-                if port_matches_vlan(port, vlan_id):
-                    vlans_map[vlan_id]["ports"].append({
-                        "switch_hostname": switch.hostname,
-                        "switch_slug": switch.slug,
-                        "port_name": port.get("name"),
-                        "port_mode": port.get("mode"),
-                        "description": port.get("description", "")
-                    })
 
+    # 2. Add port mappings grouped by switch
+    for switch in switches:
+        for port in switch.ports:
+            vlan_ids = []
+            access_vlan = port.get("access_vlan")
+            if isinstance(access_vlan, int):
+                vlan_ids.append(access_vlan)
+            native_vlan = port.get("native_vlan")
+            if isinstance(native_vlan, int):
+                vlan_ids.append(native_vlan)
+            for key in ("allowed_vlans", "hybrid_allowed_vlans"):
+                vals = port.get(key)
+                if isinstance(vals, list):
+                    for v in vals:
+                        if isinstance(v, int):
+                            vlan_ids.append(v)
+            
+            for vlan_id in set(vlan_ids):
+                if vlan_id not in vlans_map:
+                    vlans_map[vlan_id] = {
+                        "id": vlan_id,
+                        "names": set(),
+                        "switches": {}
+                    }
+                
+                if switch.slug not in vlans_map[vlan_id]["switches"]:
+                    vlans_map[vlan_id]["switches"][switch.slug] = {
+                        "hostname": switch.hostname,
+                        "slug": switch.slug,
+                        "ports": []
+                    }
+                
+                vlans_map[vlan_id]["switches"][switch.slug]["ports"].append({
+                    "name": port.get("name"),
+                    "mode": port.get("mode"),
+                    "description": port.get("description", "")
+                })
+
+    # 3. Format and serialize the map
     vlans_list = []
     for vlan_id, data in vlans_map.items():
         names = sorted(list(data["names"]))
-        vlan_name_str = ", ".join(names) if names else "VLAN " + str(vlan_id)
+        vlan_name_str = ", ".join(names) if names else f"VLAN {vlan_id}"
+        
+        switches_list = []
+        total_ports_count = 0
+        for switch_slug, sdata in data["switches"].items():
+            ports_list = sorted(sdata["ports"], key=lambda x: x["name"])
+            total_ports_count += len(ports_list)
+            switches_list.append({
+                "hostname": sdata["hostname"],
+                "slug": sdata["slug"],
+                "ports": ports_list,
+                "ports_count": len(ports_list)
+            })
+            
+        switches_list.sort(key=lambda x: x["hostname"].lower())
+        
         vlans_list.append({
             "id": vlan_id,
             "name": vlan_name_str,
-            "ports": data["ports"],
-            "ports_count": len(data["ports"])
+            "switches": switches_list,
+            "ports_count": total_ports_count
         })
         
     vlans_list.sort(key=lambda x: x["id"])
@@ -118,8 +158,53 @@ def vlans_dashboard(
     for v in vlans_list:
         if v["ports_count"] > max_ports:
             max_ports = v["ports_count"]
-            most_used_vlan = v
+            most_used_vlan = {
+                "id": v["id"],
+                "name": v["name"],
+                "ports_count": v["ports_count"]
+            }
             
+    from datetime import datetime
+    last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    return {
+        "total_vlans": total_vlans,
+        "most_used_vlan": most_used_vlan,
+        "last_updated": last_updated,
+        "vlans": vlans_list
+    }
+
+
+@app.get("/vlans", response_class=HTMLResponse)
+def vlans_dashboard(
+    request: Request,
+    repository: JsonInventoryRepository = Depends(get_repository),
+) -> HTMLResponse:
+    """Aggregated VLAN inventory dashboard using cached data."""
+    cache_path = settings.BASE_DIR / "data" / "vlans_cache.json"
+    
+    if not cache_path.exists():
+        data = aggregate_vlans_data(repository)
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            cache_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+    else:
+        try:
+            data = json.loads(cache_path.read_text(encoding="utf-8"))
+        except Exception:
+            data = aggregate_vlans_data(repository)
+            try:
+                cache_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+
+    total_vlans = data.get("total_vlans", 0)
+    most_used_vlan = data.get("most_used_vlan")
+    vlans_list = data.get("vlans", [])
+    last_updated = data.get("last_updated", "-")
+    
     all_changes = get_recent_changes(settings.BACKUPS_GIT_DIR)
     vlan_changes = [c for c in all_changes if "vlan" in c.message.lower()][:5]
 
@@ -132,8 +217,24 @@ def vlans_dashboard(
             "total_vlans": total_vlans,
             "most_used_vlan": most_used_vlan,
             "vlan_changes": vlan_changes,
+            "last_updated": last_updated,
         },
     )
+
+
+@app.post("/api/vlans/refresh")
+def refresh_vlans_cache(
+    repository: JsonInventoryRepository = Depends(get_repository),
+):
+    """Force manual regeneration of the VLANs cache."""
+    cache_path = settings.BASE_DIR / "data" / "vlans_cache.json"
+    data = aggregate_vlans_data(repository)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        cache_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to write cache: {str(e)}")
+    return {"status": "success", "last_updated": data["last_updated"]}
 
 
 @app.get("/switches/{slug}", response_class=HTMLResponse)

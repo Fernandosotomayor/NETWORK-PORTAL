@@ -3,9 +3,31 @@
 {% block title %}VLANs Dashboard | STLi Network Portal{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-  <h1 class="h3 mb-1 fw-bold text-dark">Dashboard de VLANs</h1>
-  <p class="text-secondary mb-0">Auditoría, segmentación y mapeo de VLANs en toda la red.</p>
+<style>
+  .transition-transform {
+    transition: transform 0.2s ease-in-out;
+  }
+  .rotate-90 {
+    transform: rotate(90deg);
+  }
+  .vlan-card-header:hover {
+    background-color: var(--aws-nav-hover-bg, #f2f3f3);
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-column flex-sm-row gap-3">
+  <div>
+    <h1 class="h3 mb-1 fw-bold text-dark">Dashboard de VLANs</h1>
+    <p class="text-secondary mb-0">Auditoría, segmentación y mapeo de VLANs en toda la red.</p>
+  </div>
+  
+  <div class="d-flex align-items-center gap-2 mt-1 align-self-sm-end">
+    <span class="fs-8 text-secondary me-2">Última actualización: <strong id="lblLastUpdated">{{ last_updated }}</strong></span>
+    <button class="btn btn-sm btn-primary d-flex align-items-center gap-1 shadow-sm px-3" id="btnRefreshVlans" type="button">
+      <i class="bi bi-arrow-clockwise fs-6"></i>
+      <span>Sincronizar Datos</span>
+    </button>
+  </div>
 </div>
 
 <!-- Stats Row -->
@@ -66,87 +88,91 @@
           <h2>Inventario de VLANs y Segmentación</h2>
         </div>
         <div class="w-100 w-sm-auto">
-          <input type="text" id="vlanFilter" class="form-control form-control-sm" placeholder="Filtrar por VLAN, Nombre o Puerto..." style="min-width: 250px;">
+          <input type="text" id="vlanFilter" class="form-control form-control-sm" placeholder="Filtrar por VLAN, Switch o Puerto..." style="min-width: 250px;">
         </div>
       </div>
-      <div class="aws-panel-body p-0">
-        <div class="table-aws-container">
-          <table class="table-aws table-sortable" id="vlansTable">
-            <thead>
-              <tr>
-                <th style="width: 50px;" class="no-sort"></th>
-                <th style="width: 100px;">VLAN ID</th>
-                <th>Nombre Común / Identificación</th>
-                <th class="text-center">Puertos Ocupados</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if not vlans %}
-              <tr>
-                <td colspan="4" class="text-center py-4 text-secondary">
-                  <i class="bi bi-info-circle me-1"></i>No se han detectado VLANs en las configuraciones.
-                </td>
-              </tr>
+      <div class="aws-panel-body p-3">
+        {% if not vlans %}
+        <div class="text-center py-5 text-secondary border rounded bg-light">
+          <i class="bi bi-info-circle fs-2 opacity-50 d-block mb-2"></i>
+          <span>No se han detectado VLANs en las configuraciones cargadas. Haga clic en "Sincronizar Datos" para regenerar la caché.</span>
+        </div>
+        {% else %}
+        <div class="vlan-accordion-container" id="vlanAccordion">
+          {% for vlan in vlans %}
+          {% set search_terms = [vlan.id | string, vlan.name | lower] %}
+          {% for sw in vlan.switches %}
+            {% set _ = search_terms.append(sw.hostname | lower) %}
+            {% for p in sw.ports %}
+              {% set _ = search_terms.append(p.name | lower) %}
+              {% if p.description %}
+                {% set _ = search_terms.append(p.description | lower) %}
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+          <div class="aws-panel mb-3 vlan-card" data-vlan-id="{{ vlan.id }}" data-search-text="{{ search_terms | join(' ') }}">
+            <div class="aws-panel-header vlan-card-header p-2 d-flex justify-content-between align-items-center" onclick="toggleVlanCard({{ vlan.id }})" style="cursor: pointer; user-select: none; border-bottom: none;">
+              <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-chevron-right fs-6 transition-transform text-secondary" id="arrow-{{ vlan.id }}"></i>
+                <span class="badge bg-primary text-white font-monospace fs-7 px-2 py-1">VLAN {{ vlan.id }}</span>
+                <span class="fw-semibold text-dark fs-7">{{ vlan.name }}</span>
+              </div>
+              <div class="d-flex align-items-center gap-2 ms-auto">
+                <span class="badge text-bg-light border text-secondary font-monospace fs-8">{{ vlan.switches | length }} Switches</span>
+                <span class="badge text-bg-light border text-secondary font-monospace fs-8">{{ vlan.ports_count }} Puertos</span>
+              </div>
+            </div>
+            
+            <div class="aws-panel-body p-3 d-none vlan-card-body border-top" id="body-{{ vlan.id }}">
+              {% if not vlan.switches %}
+                <p class="text-secondary fs-7 mb-0 py-2"><i class="bi bi-info-circle me-1"></i>Esta VLAN está declarada pero no tiene puertos asignados.</p>
               {% else %}
-                {% for vlan in vlans %}
-                <tr class="vlan-row-header" data-vlan-id="{{ vlan.id }}">
-                  <td>
-                    <button class="btn btn-link btn-sm p-0 text-dark btn-expand-vlan" onclick="toggleVlanDetails({{ vlan.id }})">
-                      <i class="bi bi-chevron-right" id="arrow-{{ vlan.id }}"></i>
-                    </button>
-                  </td>
-                  <td class="fw-bold font-monospace text-primary">VLAN {{ vlan.id }}</td>
-                  <td class="fw-semibold">{{ vlan.name }}</td>
-                  <td class="text-center">
-                    <span class="badge text-bg-light border fw-bold fs-7">{{ vlan.ports_count }}</span>
-                  </td>
-                </tr>
-                <!-- Expandable Details Row -->
-                <tr class="vlan-details-row d-none" id="details-{{ vlan.id }}">
-                  <td></td>
-                  <td colspan="3" class="bg-light p-3 border-top border-bottom">
-                    <h4 class="fs-7 fw-bold mb-2 text-dark uppercase"><i class="bi bi-connector me-1 text-primary"></i>Desglose de Puertos y Switches en VLAN {{ vlan.id }}:</h4>
-                    {% if not vlan.ports %}
-                      <p class="text-secondary fs-7 mb-0">No hay puertos de switches configurados con esta VLAN (podría estar declarada pero no asignada).</p>
-                    {% else %}
-                      <div class="table-responsive rounded bg-white border">
-                        <table class="table table-sm table-hover mb-0 fs-7">
+                <div class="row g-3">
+                  {% for sw in vlan.switches %}
+                  <div class="col-12 col-md-6">
+                    <div class="border rounded bg-white p-2 h-100">
+                      <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                        <a href="{{ url_for('switch_detail', slug=sw.slug) }}" class="fw-bold text-decoration-none text-primary fs-7">
+                          <i class="bi bi-hdd-network me-1"></i>{{ sw.hostname }}
+                        </a>
+                        <span class="badge text-bg-light border fs-8 font-monospace">{{ sw.ports_count }} puertos</span>
+                      </div>
+                      <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 fs-8">
                           <thead class="table-light">
                             <tr>
-                              <th>Switch Hostname</th>
-                              <th>Puerto</th>
-                              <th>Modo</th>
-                              <th>Descripción de Puerto</th>
+                              <th style="width: 35%;">Puerto</th>
+                              <th style="width: 25%;">Modo</th>
+                              <th>Descripción</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {% for assignment in vlan.ports %}
+                            {% for port in sw.ports %}
                             <tr>
+                              <td class="font-monospace fw-bold text-secondary">{{ port.name }}</td>
                               <td>
-                                <a href="{{ url_for('switch_detail', slug=assignment.switch_slug) }}" class="fw-semibold text-decoration-none">
-                                  {{ assignment.switch_hostname }}
-                                </a>
-                              </td>
-                              <td class="font-monospace fw-bold text-secondary">{{ assignment.port_name }}</td>
-                              <td>
-                                <span class="aws-badge-pill {% if assignment.port_mode == 'trunk' %}trunk{% elif assignment.port_mode == 'access' %}access{% elif assignment.port_mode == 'hybrid' %}hybrid{% else %}other{% endif %}">
-                                  {{ assignment.port_mode }}
+                                <span class="aws-badge-pill {% if port.mode == 'trunk' %}trunk{% elif port.mode == 'access' %}access{% elif port.mode == 'hybrid' %}hybrid{% else %}other{% endif %}">
+                                  {{ port.mode }}
                                 </span>
                               </td>
-                              <td class="text-secondary">{{ assignment.description or '-' }}</td>
+                              <td class="text-secondary text-truncate" style="max-width: 140px;" title="{{ port.description or '-' }}">
+                                {{ port.description or '-' }}
+                              </td>
                             </tr>
                             {% endfor %}
                           </tbody>
                         </table>
                       </div>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
               {% endif %}
-            </tbody>
-          </table>
+            </div>
+          </div>
+          {% endfor %}
         </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -186,52 +212,82 @@
   </div>
 </div>
 
+<!-- Full-screen Loading Overlay -->
+<div id="loadingOverlay" class="d-none position-fixed top-0 start-0 w-100 h-100 flex-column align-items-center justify-content-center bg-dark bg-opacity-75" style="z-index: 9999;">
+  <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+    <span class="visually-hidden">Sincronizando...</span>
+  </div>
+  <h5 class="text-white fw-bold mb-1">Sincronizando VLANs de la Red</h5>
+  <p class="text-white-50 fs-7">Leyendo configuraciones y reconstruyendo la caché...</p>
+</div>
+
 <script>
   // Accordion Expand/Collapse Logic
-  function toggleVlanDetails(vlanId) {
-    const detailsRow = document.getElementById(`details-${vlanId}`);
+  function toggleVlanCard(vlanId) {
+    const body = document.getElementById(`body-${vlanId}`);
     const arrow = document.getElementById(`arrow-${vlanId}`);
     
-    if (detailsRow.classList.contains("d-none")) {
-      detailsRow.classList.remove("d-none");
-      arrow.className = "bi bi-chevron-down text-primary";
+    if (body.classList.contains("d-none")) {
+      body.classList.remove("d-none");
+      arrow.classList.add("rotate-90", "text-primary");
     } else {
-      detailsRow.classList.add("d-none");
-      arrow.className = "bi bi-chevron-right";
+      body.classList.add("d-none");
+      arrow.classList.remove("rotate-90", "text-primary");
     }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    // Dynamic real-time filter logic for VLANs Table
+    // Dynamic real-time filter logic for VLAN Cards
     const vlanFilter = document.getElementById("vlanFilter");
-    vlanFilter.addEventListener("input", (e) => {
-      const term = e.target.value.toLowerCase();
-      const headers = document.querySelectorAll(".vlan-row-header");
-      
-      headers.forEach(header => {
-        const vlanId = header.getAttribute("data-vlan-id");
-        const detailsRow = document.getElementById(`details-${vlanId}`);
-        const headerText = header.textContent.toLowerCase();
+    if (vlanFilter) {
+      vlanFilter.addEventListener("input", (e) => {
+        const term = e.target.value.toLowerCase().trim();
+        const cards = document.querySelectorAll(".vlan-card");
         
-        // Check details text as well
-        let detailsText = "";
-        if (detailsRow) {
-          detailsText = detailsRow.textContent.toLowerCase();
-        }
-        
-        if (headerText.includes(term) || detailsText.includes(term)) {
-          header.style.display = "";
-        } else {
-          header.style.display = "none";
-          // Close details when hidden
-          if (detailsRow) {
-            detailsRow.classList.add("d-none");
+        cards.forEach(card => {
+          const searchText = card.getAttribute("data-search-text");
+          if (!term || searchText.includes(term)) {
+            card.classList.remove("d-none");
+          } else {
+            card.classList.add("d-none");
+            
+            // Close body when hidden to save DOM layout
+            const vlanId = card.getAttribute("data-vlan-id");
+            const body = document.getElementById(`body-${vlanId}`);
             const arrow = document.getElementById(`arrow-${vlanId}`);
-            if (arrow) arrow.className = "bi bi-chevron-right";
+            if (body) body.classList.add("d-none");
+            if (arrow) arrow.classList.remove("rotate-90", "text-primary");
           }
-        }
+        });
       });
-    });
+    }
+
+    // Manual Cache Refresh AJAX Logic
+    const btnRefresh = document.getElementById("btnRefreshVlans");
+    if (btnRefresh) {
+      btnRefresh.addEventListener("click", () => {
+        const overlay = document.getElementById("loadingOverlay");
+        overlay.classList.remove("d-none");
+        overlay.classList.add("d-flex");
+        
+        fetch("/api/vlans/refresh", {
+          method: "POST"
+        })
+        .then(response => {
+          if (!response.ok) throw new Error("Sync failed");
+          return response.json();
+        })
+        .then(data => {
+          window.location.reload();
+        })
+        .catch(error => {
+          console.error("Refresh error:", error);
+          alert("Error: No se pudo sincronizar el inventario de VLANs.");
+          overlay.classList.add("d-none");
+          overlay.classList.remove("d-flex");
+        });
+      });
+    }
   });
 </script>
 {% endblock %}

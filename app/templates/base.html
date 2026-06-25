@@ -210,7 +210,8 @@
               const tbody = table.querySelector("tbody");
               if (!tbody) return;
               
-              const rows = Array.from(tbody.querySelectorAll("tr")).filter(row => {
+              // Only select direct child rows of this tbody to avoid selecting rows from nested tables
+              const rows = Array.from(tbody.querySelectorAll(":scope > tr")).filter(row => {
                 return !row.querySelector("td[colspan]");
               });
 

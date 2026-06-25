@@ -43,3 +43,10 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/html", response.headers["content-type"])
         self.assertIn(b"Dashboard de VLANs", response.content)
+
+    def test_refresh_vlans_cache(self) -> None:
+        response = self.client.post("/api/vlans/refresh")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("last_updated", data)
