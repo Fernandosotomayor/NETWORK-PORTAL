@@ -4,9 +4,12 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
+import urllib.parse
+import asyncio
 from app.core.config import settings
 from parser.main import parse_file_with_metadata
 import json
+from .oxidized import get_oxidized_nodes
 
 LOGGER = logging.getLogger(__name__)
 
@@ -159,3 +162,103 @@ def run_oxidized_sync() -> dict[str, Any]:
         "parsed": parsed_count,
         "errors": errors_count
     }
+
+
+def run_ssh_command(cmd: str) -> subprocess.CompletedProcess:
+    """Run a shell command on the host VM via SSH."""
+    parsed = urllib.parse.urlparse(str(settings.OXIDIZED_URL))
+    host = parsed.hostname or "10.40.20.70"
+    
+    ssh_cmd = [
+        "ssh",
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "ConnectTimeout=10",
+        f"ubuntu@{host}",
+        cmd
+    ]
+    LOGGER.info(f"Executing SSH command on {host}: {cmd}")
+    res = subprocess.run(ssh_cmd, capture_output=True, text=True, check=True)
+    LOGGER.debug(f"SSH output: stdout: {res.stdout.strip()}, stderr: {res.stderr.strip()}")
+    return res
+
+
+_sync_in_progress = False
+
+
+def is_sync_in_progress() -> bool:
+    """Return whether a full synchronization flow is currently running."""
+    return _sync_in_progress
+
+
+async def run_full_oxidized_sync_flow() -> None:
+    """
+    Executes the full manual sync flow:
+    1. Starts the Oxidized container on the VM.
+    2. Polls Oxidized nodes status until all switches are finished backing up.
+    3. Runs finish_oxidized_publish.sh on the VM (which pushes to git and triggers local sync).
+    """
+    global _sync_in_progress
+    if _sync_in_progress:
+        LOGGER.warning("Sync already in progress, ignoring request.")
+        return
+        
+    _sync_in_progress = True
+    try:
+        LOGGER.info("Starting end-to-end Oxidized sync flow...")
+        
+        # 1. Start Oxidized container via SSH
+        try:
+            run_ssh_command("sudo docker compose -f /home/ubuntu/monitoring/docker-compose.oxidized.yml start oxidized")
+            LOGGER.info("Successfully started Oxidized container via SSH.")
+        except Exception as e:
+            LOGGER.error(f"Failed to start Oxidized container via SSH: {str(e)}")
+            return
+
+        # 2. Wait/poll Oxidized nodes status
+        # Wait 10 seconds initially for the service to start up and load nodes
+        await asyncio.sleep(10)
+        
+        poll_interval = 30
+        max_attempts = 90  # 45 minutes max timeout
+        
+        finished_successfully = False
+        
+        for attempt in range(1, max_attempts + 1):
+            LOGGER.info(f"Polling Oxidized node status (attempt {attempt}/{max_attempts})...")
+            try:
+                nodes = await get_oxidized_nodes()
+                if not nodes:
+                    LOGGER.warning("Could not reach Oxidized REST API or nodes list is empty. Retrying...")
+                    await asyncio.sleep(poll_interval)
+                    continue
+                
+                # Check how many nodes are still pending (never or fetching status)
+                pending_nodes = []
+                for node in nodes:
+                    status = node.get("status")
+                    if status in [None, "never", "fetching", "unknown"]:
+                        pending_nodes.append(node.get("name", "Unnamed"))
+                
+                if not pending_nodes:
+                    LOGGER.info("All nodes have finished backup processing!")
+                    finished_successfully = True
+                    break
+                else:
+                    LOGGER.info(f"Waiting for {len(pending_nodes)} nodes: {pending_nodes[:5]}...")
+            except Exception as e:
+                LOGGER.error(f"Error during polling Oxidized nodes: {str(e)}")
+                
+            await asyncio.sleep(poll_interval)
+
+        if not finished_successfully:
+            LOGGER.warning("Oxidized synchronization timed out or failed to complete all nodes. Proceeding to publish.")
+
+        # 3. Publish changes (run finish_oxidized_publish.sh)
+        try:
+            LOGGER.info("Triggering finish_oxidized_publish.sh on VM via SSH...")
+            run_ssh_command("/home/ubuntu/monitoring/finish_oxidized_publish.sh")
+            LOGGER.info("Sync flow complete. Host publication script finished.")
+        except Exception as e:
+            LOGGER.error(f"Failed to run finish_oxidized_publish.sh via SSH: {str(e)}")
+    finally:
+        _sync_in_progress = False

@@ -18,7 +18,7 @@ from .repository import JsonInventoryRepository, compact_vlan_list, port_matches
 from .services.audit import generate_global_report
 from .services.git_history import get_file_diff, get_file_history, get_recent_changes, get_last_global_backup_time, get_last_commit_for_file
 from .services.topology import generate_topology, TopologyState, load_topology_state, save_topology_state
-from .services.webhook import run_oxidized_sync
+from .services.webhook import run_oxidized_sync, run_full_oxidized_sync_flow, is_sync_in_progress
 from .services.snmp import query_snmp_ports_status, get_dynamic_uptime_str
 from .services.oxidized import get_oxidized_nodes
 
@@ -383,6 +383,15 @@ def post_webhook_oxidized(background_tasks: BackgroundTasks) -> dict[str, str]:
     return {"status": "accepted", "message": "Synchronization started in the background"}
 
 
+@app.post("/api/oxidized/sync")
+def post_oxidized_sync(background_tasks: BackgroundTasks) -> dict[str, str]:
+    """Endpoint to trigger the full manual synchronization flow (oxidized -> backups -> portal)."""
+    if is_sync_in_progress():
+        raise HTTPException(status_code=409, detail="Sincronización en curso. Por favor, espere a que termine.")
+    background_tasks.add_task(run_full_oxidized_sync_flow)
+    return {"status": "accepted", "message": "Full synchronization flow started in the background"}
+
+
 @app.get("/oxidized", response_class=HTMLResponse)
 def oxidized_page(
     request: Request,
@@ -443,6 +452,7 @@ async def api_oxidized_status(
     return {
         "oxidized_connected": len(nodes) > 0,
         "last_sync": get_last_global_backup_time(settings.BACKUPS_GIT_DIR),
+        "sync_in_progress": is_sync_in_progress(),
         "nodes": status_list
     }
 

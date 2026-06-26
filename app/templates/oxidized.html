@@ -120,6 +120,22 @@
       document.getElementById('statFailed').innerText = failedCount;
       document.getElementById('statSyncTime').innerText = data.last_sync || 'N/A';
 
+      // Update sync button status
+      const btn = document.getElementById('btnSync');
+      const icon = document.getElementById('syncIcon');
+      const text = document.getElementById('syncText');
+      if (btn && icon && text) {
+        if (data.sync_in_progress) {
+          btn.disabled = true;
+          icon.className = 'bi bi-arrow-repeat spinner-border spinner-border-sm border-0';
+          text.innerText = 'Sincronizando...';
+        } else {
+          btn.disabled = false;
+          icon.className = 'bi bi-arrow-repeat me-1';
+          text.innerText = 'Sincronizar Ahora';
+        }
+      }
+
       const tbody = document.getElementById('tableBody');
       if (nodes.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary">No hay switches registrados</td></tr>';
@@ -203,25 +219,30 @@
     text.innerText = 'Sincronizando...';
 
     try {
-      const response = await fetch('/api/webhooks/oxidized', {
+      const response = await fetch('/api/oxidized/sync', {
         method: 'POST'
       });
       
       if (response.ok) {
         showToast("Sincronización en segundo plano iniciada correctamente.", "success");
-        setTimeout(fetchStatus, 1500);
+        setTimeout(fetchStatus, 500);
       } else {
-        throw new Error('Sync request failed');
+        let errMsg = "No se pudo iniciar la sincronización.";
+        try {
+          const errData = await response.json();
+          if (errData && errData.detail) {
+            errMsg = errData.detail;
+          }
+        } catch (_) {}
+        throw new Error(errMsg);
       }
     } catch (error) {
       console.error(error);
-      showToast("No se pudo iniciar la sincronización.", "danger");
-    } finally {
-      setTimeout(() => {
-        btn.disabled = false;
-        icon.className = 'bi bi-arrow-repeat me-1';
-        text.innerText = 'Sincronizar Ahora';
-      }, 3000);
+      showToast(error.message || "No se pudo iniciar la sincronización.", "danger");
+      // Re-enable button since starting failed
+      btn.disabled = false;
+      icon.className = 'bi bi-arrow-repeat me-1';
+      text.innerText = 'Sincronizar Ahora';
     }
   }
 
