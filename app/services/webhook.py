@@ -53,40 +53,44 @@ def run_oxidized_sync() -> dict[str, Any]:
             LOGGER.exception("Failed to initialize git repository in backups directory")
 
     
-    # 2. Check/pull remote archive repo
-    git_success = False
+    # 2. Check/pull remote archive repo (best-effort)
+    # In production the archive directory is a Docker volume mount that is
+    # updated directly by the host VM scripts.  A git-pull failure (e.g.
+    # read-only deploy key, no network) is not fatal as long as the local
+    # files are present.
     try:
         if archive_dir.exists() and (archive_dir / ".git").exists():
             LOGGER.info(f"Running git pull in {archive_dir}")
-            subprocess.run(["git", "pull"], cwd=str(archive_dir), capture_output=True, text=True, check=True)
-            git_success = True
-        else:
+            res = subprocess.run(
+                ["git", "pull"],
+                cwd=str(archive_dir),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if res.returncode != 0:
+                LOGGER.warning(
+                    "git pull failed in %s (rc=%d): %s — using local files.",
+                    archive_dir,
+                    res.returncode,
+                    (res.stderr or res.stdout or "").strip()[:200],
+                )
+        elif not archive_dir.exists():
             LOGGER.info(f"Cloning {repo_url} into {archive_dir}")
             archive_dir.mkdir(parents=True, exist_ok=True)
-            # Use git clone with target directory specified as "." to clone into it
-            subprocess.run(["git", "clone", repo_url, "."], cwd=str(archive_dir), capture_output=True, text=True, check=True)
-            git_success = True
-    except Exception as e:
-        LOGGER.exception(f"Git operation failed for main path {archive_dir}. Trying fallback workspace path.")
-        fallback_dir = settings.BASE_DIR / "data" / "oxidized-archive"
-        try:
-            if fallback_dir.exists() and (fallback_dir / ".git").exists():
-                LOGGER.info(f"Running git pull in fallback {fallback_dir}")
-                subprocess.run(["git", "pull"], cwd=str(fallback_dir), capture_output=True, text=True, check=True)
-                archive_dir = fallback_dir
-                git_success = True
-            else:
-                LOGGER.info(f"Cloning {repo_url} into fallback {fallback_dir}")
-                fallback_dir.mkdir(parents=True, exist_ok=True)
-                subprocess.run(["git", "clone", repo_url, "."], cwd=str(fallback_dir), capture_output=True, text=True, check=True)
-                archive_dir = fallback_dir
-                git_success = True
-        except Exception as e2:
-            LOGGER.exception(f"Fallback Git operation also failed: {e2}")
+            subprocess.run(
+                ["git", "clone", repo_url, "."],
+                cwd=str(archive_dir),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+    except Exception:
+        LOGGER.exception(f"Git operation failed for {archive_dir}. Continuing with local files.")
     
     if not archive_dir.exists():
-        LOGGER.error("Failed to acquire latest backups from Git repository.")
-        return {"status": "error", "message": "Failed to pull/clone backups"}
+        LOGGER.error("Archive directory does not exist: %s", archive_dir)
+        return {"status": "error", "message": "Archive directory not found"}
     
     # 3. Find latest backup for each switch and copy to backups/
     copied_files: list[Path] = []
