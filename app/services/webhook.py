@@ -80,7 +80,7 @@ def run_oxidized_sync() -> dict[str, Any]:
         except Exception as e2:
             LOGGER.exception(f"Fallback Git operation also failed: {e2}")
     
-    if not git_success or not archive_dir.exists():
+    if not archive_dir.exists():
         LOGGER.error("Failed to acquire latest backups from Git repository.")
         return {"status": "error", "message": "Failed to pull/clone backups"}
     
