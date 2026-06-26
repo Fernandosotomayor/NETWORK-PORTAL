@@ -169,33 +169,55 @@ def get_last_global_backup_time(git_repo_path: Path) -> str:
         return val[:16].replace("T", " ")
 
 
+_last_commit_cache: dict[str, dict | None] = {}
+
+
+def clear_last_commit_cache() -> None:
+    """Clear the cached commit details."""
+    global _last_commit_cache
+    _last_commit_cache.clear()
+    LOGGER.info("Cleared last commit cache.")
+
+
 def get_last_commit_for_file(git_repo_path: Path, filename: str) -> dict | None:
     """Retrieve details of the last commit for a specific file."""
+    cache_key = f"{git_repo_path}:{filename}"
+    if cache_key in _last_commit_cache:
+        return _last_commit_cache[cache_key]
+
     if not git_repo_path.exists() or not (git_repo_path / ".git").exists():
         return None
     
-    stdout = run_git_command(
-        git_repo_path,
-        [
-            "log",
-            "-1",
-            "--format=%H|%ad|%an|%s",
-            "--date=iso-strict",
-            "--",
-            filename,
-        ],
-    )
-    val = stdout.strip()
-    if not val:
-        return None
-    
-    parts = val.split("|", maxsplit=3)
-    if len(parts) >= 4:
-        return {
-            "hash": parts[0][:7],
-            "date": parts[1],
-            "author": parts[2],
-            "message": parts[3],
-        }
-    return None
+    try:
+        stdout = run_git_command(
+            git_repo_path,
+            [
+                "log",
+                "-1",
+                "--format=%H|%ad|%an|%s",
+                "--date=iso-strict",
+                "--",
+                filename,
+            ],
+        )
+        val = stdout.strip()
+        if not val:
+            res = None
+        else:
+            parts = val.split("|", maxsplit=3)
+            if len(parts) >= 4:
+                res = {
+                    "hash": parts[0][:7],
+                    "date": parts[1],
+                    "author": parts[2],
+                    "message": parts[3],
+                }
+            else:
+                res = None
+    except Exception:
+        LOGGER.exception(f"Failed to get last commit for {filename}")
+        res = None
+
+    _last_commit_cache[cache_key] = res
+    return res
 

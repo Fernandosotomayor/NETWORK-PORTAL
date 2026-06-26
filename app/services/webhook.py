@@ -10,6 +10,7 @@ from app.core.config import settings
 from parser.main import parse_file_with_metadata
 import json
 from .oxidized import get_oxidized_nodes
+from .git_history import clear_last_commit_cache
 
 LOGGER = logging.getLogger(__name__)
 
@@ -155,6 +156,12 @@ def run_oxidized_sync() -> dict[str, Any]:
             LOGGER.info("Deleted VLANs cache to trigger update on next load.")
         except Exception:
             LOGGER.exception("Failed to delete VLANs cache file")
+
+    # Clear commit cache since repository has changed
+    try:
+        clear_last_commit_cache()
+    except Exception:
+        LOGGER.exception("Failed to clear last commit cache")
 
     return {
         "status": "success",
