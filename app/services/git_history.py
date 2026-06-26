@@ -164,7 +164,8 @@ def get_last_global_backup_time(git_repo_path: Path) -> str:
     
     try:
         dt = datetime.datetime.fromisoformat(val)
-        return format_friendly_datetime(dt)
+        dt_local = dt.astimezone()
+        return format_friendly_datetime(dt_local)
     except Exception:
         return val[:16].replace("T", " ")
 
