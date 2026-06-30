@@ -45,8 +45,8 @@
   </div>
   <div class="col-12 col-md-3">
     <div class="aws-metric-card">
-      <div class="aws-metric-label">Respaldos Fallidos</div>
-      <div class="aws-metric-value text-danger" id="statFailed">-</div>
+      <div class="aws-metric-label">Respaldos Pendientes</div>
+      <div class="aws-metric-value text-warning" id="statFailed">-</div>
     </div>
   </div>
   <div class="col-12 col-md-3">
@@ -114,7 +114,7 @@
       document.getElementById('statTotal').innerText = nodes.length;
       
       const successCount = nodes.filter(n => n.status === 'success').length;
-      const failedCount = nodes.filter(n => ['error', 'no_connection', 'timeout', 'never_backup'].includes(n.status) || (n.status && n.status !== 'success' && n.status !== 'unknown')).length;
+      const failedCount = nodes.filter(n => n.status !== 'success').length;
       
       document.getElementById('statSuccess').innerText = successCount;
       document.getElementById('statFailed').innerText = failedCount;
